@@ -323,7 +323,7 @@
             <v-row>
               <v-col
                 cols="12"
-                sm="2"
+                sm="4"
                 md="2"
                 class="filter-col"
                 style="margin-top: -0.5rem"
@@ -337,7 +337,7 @@
                   :disabled="!canEditData()"
                 />
               </v-col>
-              <v-col cols="12" sm="3" md="3" class="filter-col">
+              <v-col cols="12" sm="4" md="3" class="filter-col">
                 <v-autocomplete
                   v-model="mBranch"
                   :items="iBranch"
@@ -354,7 +354,7 @@
                   </template></v-autocomplete
                 >
               </v-col>
-              <v-col cols="12" sm="3" md="3" class="filter-col">
+              <v-col cols="12" sm="4" md="3" class="filter-col">
                 <v-autocomplete
                   v-model="mMaterial"
                   :items="iMaterial"
@@ -371,7 +371,7 @@
                 >
               </v-col>
 
-              <v-col cols="12" sm="3" md="3" class="filter-col">
+              <v-col cols="12" sm="4" md="3" class="filter-col">
                 <v-autocomplete
                   v-model="mSpecialArea"
                   :items="iSpecialArea"
@@ -387,7 +387,7 @@
                   </template></v-autocomplete
                 >
               </v-col>
-              <v-col cols="12" sm="1" md="1" class="filter-col">
+              <v-col cols="12" sm="4" md="1" class="filter-col">
                 <v-text-field
                   v-model="mQuantity"
                   outlined
