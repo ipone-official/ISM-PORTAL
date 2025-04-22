@@ -434,67 +434,88 @@ const isWithinRadius = computed(() => {
   );
   return d <= 1000;
 });
-
 const getLocation = async () => {
   try {
     const permission = await navigator.permissions.query({ name: "geolocation" });
+
+    // ถ้ายังไม่อนุญาตหรือไม่เคยให้สิทธิ์เลย
+    if (permission.state === "prompt") {
+      navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
+      return;
+    }
+
+    // ถ้าเคยอนุญาตแล้ว
+    if (permission.state === "granted") {
+      navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
+      return;
+    }
+
+    // ถ้าผู้ใช้ "เคยปฏิเสธไปแล้ว" -> ต้องให้ user ไป reset เอง
     if (permission.state === "denied" && !hasAlertedLocationError.value) {
       hasAlertedLocationError.value = true;
       currentLat.value = "ไม่สามารถเข้าถึง";
       currentLon.value = "ไม่สามารถเข้าถึง";
+
       Swal.fire({
         icon: "warning",
         title: "ไม่สามารถเข้าถึงตำแหน่ง",
-        html: `กรุณาอนุญาตตำแหน่งผ่าน <b>การตั้งค่าเบราว์เซอร์</b><br><br>
-         หากอนุญาตแล้ว กรุณา <b>รีโหลดหน้า</b>เพื่อใช้งานอีกครั้ง`,
+        html: `
+          <p>คุณได้ปฏิเสธการขออนุญาตตำแหน่ง</p>
+          <p>กรุณาเปิดอนุญาตตำแหน่งผ่าน <b>การตั้งค่าเบราว์เซอร์</b></p>
+          <ul style="text-align:left;">
+            <li>คลิกที่ไอคอน 🔒 ข้าง URL</li>
+            <li>เลือก "Site settings" หรือ "การตั้งค่าเว็บไซต์"</li>
+            <li>เปลี่ยน Location เป็น "Allow"</li>
+          </ul>
+          <p>จากนั้นให้รีโหลดหน้าเว็บอีกครั้ง</p>
+        `,
         confirmButtonText: "รีโหลดหน้า",
-      }).then(() => {
-        location.reload(); // รีโหลดหน้าเพื่อให้ permission เปลี่ยนมีผล
-      });
+      }).then(() => location.reload());
 
       return;
     }
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        userPositionReady.value = true;
-        currentLat.value = lat;
-        currentLon.value = lon;
-        hasAlertedLocationError.value = false;
-
-        // วาง/อัปเดต marker ตำแหน่งปัจจุบัน
-        if (map.value) {
-          if (currentLocationMarker) {
-            currentLocationMarker.setLngLat([lon, lat]);
-          } else {
-            currentLocationMarker = new maplibregl.Marker({
-              element: createCustomIcon("mdi-account-badge-outline", "#007fc4"),
-            })
-              .setLngLat([lon, lat])
-              .addTo(map.value);
-          }
-        }
-      },
-      () => {
-        if (!hasAlertedLocationError.value) {
-          hasAlertedLocationError.value = true;
-          Swal.fire({
-            icon: "error",
-            title: "เกิดข้อผิดพลาด",
-            text: "ไม่สามารถดึงตำแหน่งของคุณได้",
-            confirmButtonText: "รับทราบ",
-          });
-        }
-        currentLat.value = "ไม่สามารถเข้าถึง";
-        currentLon.value = "ไม่สามารถเข้าถึง";
-      }
-    );
   } catch (err) {
     console.error("เกิดข้อผิดพลาดในการตรวจสอบ permission", err);
   }
+
+  // ฟังก์ชัน callback สำเร็จ
+  function successCallback(pos) {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    userPositionReady.value = true;
+    currentLat.value = lat;
+    currentLon.value = lon;
+    hasAlertedLocationError.value = false;
+
+    if (map.value) {
+      if (currentLocationMarker) {
+        currentLocationMarker.setLngLat([lon, lat]);
+      } else {
+        currentLocationMarker = new maplibregl.Marker({
+          element: createCustomIcon("mdi-account-badge-outline", "#007fc4"),
+        })
+          .setLngLat([lon, lat])
+          .addTo(map.value);
+      }
+    }
+  }
+
+  // ฟังก์ชัน callback ล้มเหลว
+  function errorCallback() {
+    if (!hasAlertedLocationError.value) {
+      hasAlertedLocationError.value = true;
+      Swal.fire({
+        icon: "error",
+        title: "เกิดข้อผิดพลาด",
+        text: "ไม่สามารถดึงตำแหน่งของคุณได้",
+        confirmButtonText: "รับทราบ",
+      });
+    }
+    currentLat.value = "ไม่สามารถเข้าถึง";
+    currentLon.value = "ไม่สามารถเข้าถึง";
+  }
 };
+
 
 const checkIn = () => {
   const now = formatTime(new Date());
