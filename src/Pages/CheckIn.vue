@@ -440,14 +440,18 @@ const getLocation = async () => {
     const permission = await navigator.permissions.query({ name: "geolocation" });
     if (permission.state === "denied" && !hasAlertedLocationError.value) {
       hasAlertedLocationError.value = true;
+      currentLat.value = "ไม่สามารถเข้าถึง";
+      currentLon.value = "ไม่สามารถเข้าถึง";
       Swal.fire({
         icon: "warning",
         title: "ไม่สามารถเข้าถึงตำแหน่ง",
-        text: "กรุณาอนุญาตตำแหน่งผ่านการตั้งค่าเบราว์เซอร์",
-        confirmButtonText: "ตกลง",
+        html: `กรุณาอนุญาตตำแหน่งผ่าน <b>การตั้งค่าเบราว์เซอร์</b><br><br>
+         หากอนุญาตแล้ว กรุณา <b>รีโหลดหน้า</b>เพื่อใช้งานอีกครั้ง`,
+        confirmButtonText: "รีโหลดหน้า",
+      }).then(() => {
+        location.reload(); // รีโหลดหน้าเพื่อให้ permission เปลี่ยนมีผล
       });
-      currentLat.value = "ไม่สามารถเข้าถึง";
-      currentLon.value = "ไม่สามารถเข้าถึง";
+
       return;
     }
 
