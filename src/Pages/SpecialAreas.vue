@@ -762,6 +762,7 @@ const canShowButtonDelete = (status) => {
 };
 
 const canEditData = () => {
+  if(flagCreate.value) return true
   if (!selectSpecialArea.value) return false;
 
   const status = selectSpecialArea.value.status;
