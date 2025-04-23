@@ -302,14 +302,24 @@
               <v-col cols="12" md="3" v-show="selectSpecialArea.updatedName">
                 <v-card class="grey-card" outlined>
                   <v-card-text class="text-left">
-                    แก้ไขโดย : {{ selectSpecialArea.updatedName }}
+                    {{
+                      selectSpecialArea.status == "CONFIRMED"
+                        ? "อนุมัติโดย :"
+                        : "แก้ไขโดย :"
+                    }}
+                    {{ selectSpecialArea.updatedName }}
                   </v-card-text>
                 </v-card>
               </v-col>
               <v-col cols="12" md="3" v-show="selectSpecialArea.updatedDate">
                 <v-card class="grey-card" outlined>
                   <v-card-text class="text-left">
-                    วันที่แก้ไข :
+                    {{
+                      selectSpecialArea.status == "CONFIRMED"
+                        ? "วันที่อนุมัติ :"
+                        : "วันที่แก้ไข :"
+                    }}
+
                     {{
                       selectSpecialArea.updatedDate
                         ? formatDateTime(selectSpecialArea.updatedDate)
@@ -762,7 +772,7 @@ const canShowButtonDelete = (status) => {
 };
 
 const canEditData = () => {
-  if(flagCreate.value) return true
+  if (flagCreate.value) return true;
   if (!selectSpecialArea.value) return false;
 
   const status = selectSpecialArea.value.status;
