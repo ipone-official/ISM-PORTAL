@@ -60,7 +60,6 @@
               <v-btn color="primary" @click="login" class="login-btn" large>Login</v-btn>
             </v-card-actions>
           </v-card>
-
         </v-col>
       </v-row>
       <v-snackbar
@@ -104,11 +103,34 @@ export default {
   methods: {
     MapRole(user) {
       const rolesPriority = [
-        "TruckQueue_Admin",
-        "TruckQueue_Planning",
-        "TruckQueue_Vendor",
-        "TruckQueue_Store",
-        "TruckQueue_Forklift",
+        "ISM_ADMIN",
+        "ISM_MANAGER",
+        "ISM_PC_BKK1",
+        "ISM_PC_BKK2",
+        "ISM_PC_BKK3",
+        "ISM_PC_BKK4",
+        "ISM_PC_BKK5",
+        "ISM_PC_UPC1",
+        "ISM_PC_UPC2",
+        "ISM_PC_UPC3",
+        "ISM_PC_UPC4",
+        "ISM_PC_UPC5",
+        "ISM_PC_UPC6",
+        "ISM_PC_UPC7",
+        "ISM_PC_UPC8",
+        "ISM_SUPERVISOR_BKK1",
+        "ISM_SUPERVISOR_BKK2",
+        "ISM_SUPERVISOR_BKK3",
+        "ISM_SUPERVISOR_BKK4",
+        "ISM_SUPERVISOR_BKK5",
+        "ISM_SUPERVISOR_UPC1",
+        "ISM_SUPERVISOR_UPC2",
+        "ISM_SUPERVISOR_UPC3",
+        "ISM_SUPERVISOR_UPC4",
+        "ISM_SUPERVISOR_UPC5",
+        "ISM_SUPERVISOR_UPC6",
+        "ISM_SUPERVISOR_UPC7",
+        "ISM_SUPERVISOR_UPC8",
       ];
 
       for (const role of rolesPriority) {
@@ -132,25 +154,25 @@ export default {
         const response = await loginUser(this.username, this.password);
         if (!response.locked) {
           const initRole = this.MapRole(response.group);
-        if (!initRole) {
-          Swal.fire({
-            html: `คุณไม่มีสิทธิ์เข้าใช้งานระบบ Truck Queue`,
-            icon: "warning",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonText: "OK",
-          }).then(async (result) => {
-            if (result.isConfirmed) {
-              localStorage.removeItem("accessTokenISMPortal");
-              localStorage.removeItem("refreshTokenISMPortal");
-              this.$router.push({ name: "Login" });
-            }
-          });
-        }
+          if (!initRole) {
+            Swal.fire({
+              html: `คุณไม่มีสิทธิ์เข้าใช้งานระบบ ISM Portal`,
+              icon: "warning",
+              showCancelButton: false,
+              allowOutsideClick: false,
+              confirmButtonText: "OK",
+            }).then(async (result) => {
+              if (result.isConfirmed) {
+                localStorage.removeItem("accessTokenISMPortal");
+                localStorage.removeItem("refreshTokenISMPortal");
+                this.$router.push({ name: "Login" });
+              }
+            });
+          }
           // เรียกใช้ userStore เพื่อจัดการข้อมูลผู้ใช้
           const userStore = useUserStore();
           // ตั้งค่าข้อมูลผู้ใช้ใน userStore
-          
+
           userStore.login({
             name: response.name,
             firstName: response.firstName,
