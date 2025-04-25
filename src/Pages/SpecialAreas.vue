@@ -65,7 +65,7 @@
       class="filter-row"
       v-if="sDisabledDate"
     >
-      <v-col cols="12" sm="4" md="3" class="filter-col mb-3">
+      <v-col cols="12" sm="3" md="3" class="filter-col mb-3">
         <v-autocomplete
           v-model="mFilterStatus"
           :items="iFilterStatus"
@@ -181,9 +181,9 @@
         </v-container>
       </template>
 
-      <template v-slot:item.specialDate="{ item }">
+      <!-- <template v-slot:item.specialDate="{ item }">
         <div>{{ item.specialDate ? formatDate(item.specialDate) : "-" }}</div>
-      </template>
+      </template> -->
 
       <template v-slot:item.saID="{ item }">
         <div
@@ -661,7 +661,7 @@ const dateSpecial = ref(getTodayYYYYMMDD());
 
 const headers = [
   { title: "เลขที่", align: "left", key: "saID" },
-  { title: "วันที่สร้าง", align: "left", key: "specialDate" },
+  { title: "วันที่สร้าง", align: "left", key: "formattedDate" },
   { title: "สาขา/ห้าง", align: "left", key: "branchName" },
   { title: "จังหวัด", align: "left", key: "province" },
   { title: "ชื่อผลิตภัณฑ์", align: "left", key: "productName" },
@@ -671,7 +671,7 @@ const headers = [
   { title: "สถานที่จัด", align: "left", key: "locationDesc" },
   { title: "รูปภาพ", align: "left", key: "imagePathUrl" },
   { title: "สถานะ", align: "left", key: "status" },
-  { title: "Actions", align: "left", key: "actions" },
+  { title: "ดำเนินการ", align: "left", key: "actions" },
 ];
 
 const resetForm = () => {
@@ -757,7 +757,11 @@ const searchSpecialAreas = async () => {
       endDate: dateEnd.value,
       empBy: dataForArea,
     });
-    rawReservations.value = response.results;
+   // 🆕 เพิ่มขั้นตอน map และ format date
+   rawReservations.value = response.results.map((item) => ({
+      ...item,
+      formattedDate: item.specialDate ? formatDate(item.specialDate) : "-"
+    }));
   } catch (error) {
     console.error("❌ Error loading TSpecialAreas:", error);
   } finally {

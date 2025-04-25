@@ -31,7 +31,7 @@
       >
         <v-list-item-title class="menu-title">
           <v-icon>mdi-account-check-outline</v-icon>
-          Check In
+          เช็คอิน
         </v-list-item-title>
       </v-list-item>
       
@@ -45,69 +45,27 @@
         value="SpecialAreas"
       >
         <v-list-item-title class="menu-title">
-          <v-icon>mdi-truck-fast-outline</v-icon>
-          Special Areas
+          <v-icon>mdi-perspective-less</v-icon>
+          พื้นที่พิเศษ
         </v-list-item-title>
       </v-list-item>
 
-      <!-- MonitorQueue -->
-      <!-- <v-list-item
-        v-if="!isHidden('MonitorQueue')"
+    <!-- PriceReview -->
+    <v-list-item
+        v-if="!isHidden('PriceReview')"
         class="menu-item"
-        @click="navigateTo('/MonitorQueue')"
+        @click="navigateTo('/PriceReview')"
         dense
         rounded="shaped"
-        value="MonitorQueue"
+        value="PriceReview"
       >
         <v-list-item-title class="menu-title">
-          <v-icon>mdi-monitor-eye</v-icon>
-          Monitor
+          <v-icon>mdi-cash-multiple</v-icon>
+          ตรวจสอบราคา
         </v-list-item-title>
-      </v-list-item> -->
+      </v-list-item>
 
-      <!-- DisplayQueue (ไม่มีเงื่อนไข) -->
-      <!-- <v-list-item
-        class="menu-item"
-        @click="navigateTo('/DisplayQueue')"
-        dense
-        rounded="shaped"
-        value="DisplayQueue"
-      >
-        <v-list-item-title class="menu-title">
-          <v-icon>mdi-calendar-month-outline</v-icon>
-          Display
-        </v-list-item-title>
-      </v-list-item> -->
-
-      <!-- ManageQueue -->
-      <!-- <v-list-item
-        v-if="!isHidden('ManageQueue')"
-        class="menu-item"
-        @click="navigateTo('/ManageQueue')"
-        dense
-        rounded="shaped"
-        value="ManageQueue"
-      >
-        <v-list-item-title class="menu-title">
-          <v-icon>mdi-file-document-edit-outline</v-icon>
-          Manage
-        </v-list-item-title>
-      </v-list-item> -->
-
-      <!-- UploadQueue -->
-      <!-- <v-list-item
-        v-if="!isHidden('UploadQueue')"
-        class="menu-item"
-        @click="navigateTo('/UploadQueue')"
-        dense
-        rounded="shaped"
-        value="UploadQueue"
-      >
-        <v-list-item-title class="menu-title">
-          <v-icon>mdi-cloud-upload-outline</v-icon>
-          Upload
-        </v-list-item-title>
-      </v-list-item> -->
+   
     </v-list>
     <div class="footer">
       <v-divider></v-divider>

@@ -1,15 +1,10 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import Login from '@/Pages/core/PageLogin.vue';
 import Profile from '@/Pages/Profile.vue';
-import DisplayQueue from '@/Pages/DisplayQueue.vue';
-import UploadQueue from '@/Pages/UploadQueue.vue';
 import { isTokenNearExpiration, RenewToken } from "@/services/apiService.js";
-import ManageQueue from '@/Pages/ManageQueue.vue'
-import MonitorQueue from '@/Pages/MonitorQueue.vue' 
-import ShowQueue from '@/Pages/ShowQueue.vue';
 import CheckIn from '@/Pages/CheckIn.vue'
 import SpecialAreas from '@/Pages/SpecialAreas.vue';
-
+import PriceReview from '@/Pages/PriceReview.vue'
 
 const routes = [
   {
@@ -17,7 +12,7 @@ const routes = [
     name: 'CheckIn',
     component: CheckIn,
     meta: {
-      breadcrumb: [{ name: 'Check In', link: '/CheckIn' },
+      breadcrumb: [{ name: 'เช็คอิน', link: '/CheckIn' },
       ],
     },
   },
@@ -26,60 +21,16 @@ const routes = [
     name: 'SpecialAreas',
     component: SpecialAreas,
     meta: {
-      breadcrumb: [{ name: 'Special Areas', link: '/SpecialAreas' },
+      breadcrumb: [{ name: 'พื้นที่พิเศษ', link: '/SpecialAreas' },
       ],
     },
   },
   {
-    path: '/ShowQueue',
-    name: 'ShowQueue',
-    component: ShowQueue,
+    path: '/PriceReview',
+    name: 'PriceReview',
+    component: PriceReview,
     meta: {
-      allowAnonymous: true,
-    },
-  },
-  {
-    path: '/ShowQueueAll',
-    name: 'ShowQueueAll',
-    component: ShowQueue,
-    meta: {
-      breadcrumb: [{ name: 'Show Queue', link: '/ShowQueueAll' },
-      ],
-    },
-  },
-  {
-    path: '/MonitorQueue',
-    name: 'MonitorQueue',
-    component: MonitorQueue,
-    meta: {
-      breadcrumb: [{ name: 'Monitor', link: '/MonitorQueue' },
-      ],
-    },
-  },
-  {
-    path: '/DisplayQueue',
-    name: 'DisplayQueue',
-    component: DisplayQueue,
-    meta: {
-      breadcrumb: [{ name: 'Display', link: '/DisplayQueue' },
-      ],
-    },
-  },
-  {
-    path: '/ManageQueue',
-    name: 'ManageQueue',
-    component: ManageQueue,
-    meta: {
-      breadcrumb: [{ name: 'Manage', link: '/ManageQueue' },
-      ],
-    },
-  },
-  {
-    path: '/UploadQueue',
-    name: 'UploadQueue',
-    component: UploadQueue,
-    meta: {
-      breadcrumb: [{ name: 'Upload', link: '/UploadQueue' },
+      breadcrumb: [{ name: 'ตรวจสอบราคา', link: '/PriceReview' },
       ],
     },
   },

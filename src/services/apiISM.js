@@ -102,3 +102,43 @@ export const pUpdateStatusSpecialAreas = async (item) => {
   }
 };
 
+
+export const pPriceReviewHead = async (item) => {
+  try {
+    const response = await api.post('pPriceReviewHead', item);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error pPriceReviewHead:', error);
+    throw error;
+  }
+};
+
+export const gTransactionPricePreview = async (item) => {
+  try {
+    const response = await api.post('gTransactionPricePreview', item);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error gTransactionPricePreview:', error);
+    throw error;
+  }
+};
+
+export const gPriceReviewDetail = async (item) => {
+  try {
+    const response = await api.get(`gPriceReviewDetail?reviewID=${item}`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error gPriceReviewDetail:', error);
+    throw error;
+  }
+};
+
+export const pPriceReviewDetail = async (item) => {
+  try {
+    const response = await api.post('pPriceReviewDetail', item);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error pPriceReviewDetail:', error);
+    throw error;
+  }
+};
