@@ -38,7 +38,7 @@ export default {
   setup(props, { emit }) {
     const dialog = ref(props.modelValue);
     const pdfSrc = ref(
-      "https://portal.ip-one.com/Web-TruckQueue/UserManual/TruckQueue.pdf"
+      "https://portal.ip-one.com/ISM-Portal/UserManual/ismportal.pdf"
     );
 
     // ✅ เมื่อค่า modelValue เปลี่ยน ให้เปลี่ยนค่า dialog ตาม
@@ -54,7 +54,7 @@ export default {
     };
 
     const downloadPDF = () => {
-      saveAs(pdfSrc.value, "UserManual_TruckQueue.pdf");
+      saveAs(pdfSrc.value, "UserManual_ISM_Portal.pdf");
     };
 
     return { dialog, pdfSrc, closeDialog, downloadPDF };

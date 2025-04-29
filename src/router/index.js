@@ -12,7 +12,7 @@ const routes = [
     name: 'CheckIn',
     component: CheckIn,
     meta: {
-      breadcrumb: [{ name: 'เช็คอิน', link: '/CheckIn' },
+      breadcrumb: [{ name: 'บันทึกเวลาทำงาน', link: '/CheckIn' },
       ],
     },
   },

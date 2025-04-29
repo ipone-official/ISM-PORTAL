@@ -31,7 +31,7 @@
       >
         <v-list-item-title class="menu-title">
           <v-icon>mdi-account-check-outline</v-icon>
-          เช็คอิน
+          บันทึกเวลาทำงาน
         </v-list-item-title>
       </v-list-item>
       
