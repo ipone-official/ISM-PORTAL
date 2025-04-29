@@ -73,6 +73,7 @@
           multiple
           :color="'primary'"
           active-class="custom-active-class"
+          clearable
         />
       </v-col>
 
@@ -95,8 +96,6 @@
       class="data-table mt-5"
       dense
       rounded
-      v-model="selected"
-      show-select
       item-value="saID"
     >
       <template v-slot:top>
@@ -104,12 +103,21 @@
           <v-toolbar-title class="centered-title">รายการตรวจสอบราคา</v-toolbar-title>
           <v-tooltip text="Refresh" location="bottom" color="blue" text-color="white">
             <template v-slot:activator="{ props }">
-              <v-btn icon variant="text" v-bind="props">
+              <v-btn icon variant="text" v-bind="props" @click="searchPriceReview">
                 <v-icon color="white">mdi-refresh</v-icon>
               </v-btn>
             </template>
           </v-tooltip>
         </v-toolbar>
+      </template>
+
+      <template v-slot:item.reviewID="{ item }">
+        <div
+          style="color: #007fc4; font-weight: bold; cursor: pointer"
+          @click="editItem(item)"
+        >
+          {{ item.reviewID }}
+        </div>
       </template>
 
       <template v-slot:item.actions="{ item }">
@@ -121,12 +129,12 @@
         >
           <template v-slot:activator="{ props }">
             <v-btn icon variant="text" v-bind="props" @click="editItem(item)">
-              <v-icon color="primary">mdi-storefront-edit-outline</v-icon>
+              <v-icon color="primary">mdi-file-document-check-outline</v-icon>
             </v-btn>
           </template>
         </v-tooltip>
         <v-tooltip
-          v-if="canShowButtonDelete(item.status)"
+          v-if="canShowButtonDelete()"
           text="ลบรายการ"
           location="bottom"
           color="red"
@@ -235,6 +243,7 @@
                   class="filter-select input-field"
                   :minOffset="-30"
                   :maxOffset="0"
+                  :disabled="!showDetail()"
                 />
               </v-col>
               <v-col cols="12" sm="4" md="4" class="filter-col">
@@ -247,6 +256,7 @@
                   dense
                   class="filter-select input-field"
                   return-object
+                  :readonly="!showDetail()"
                 >
                   <template v-slot:label>
                     <span style="color: red">*</span> ห้าง/สาขา
@@ -258,6 +268,7 @@
                 sm="4"
                 md="5"
                 class="filter-col d-flex justify-end align-center"
+                v-if="showDetail()"
               >
                 <v-btn
                   color="primary"
@@ -269,6 +280,13 @@
                   <v-icon left>mdi-plus</v-icon> เพิ่มรายการ
                 </v-btn>
               </v-col>
+              <v-col
+                cols="12"
+                sm="4"
+                md="5"
+                class="filter-col d-flex justify-end align-center"
+                v-else
+              ></v-col>
               <v-container fluid v-if="isEditDetailMode">
                 <v-card
                   elevation="2"
@@ -280,13 +298,17 @@
                     <!-- ช่องราคา -->
                     <v-col cols="6" sm="4" md="4" class="filter-col">
                       <v-text-field
-                        v-model="mNormalPrice"
+                        v-model="formattedmNormalPrice"
                         outlined
                         dense
                         class="input-field"
                         prepend-inner-icon="mdi-cash"
                         :readonly="true"
                         @keydown="keyFilter.numbersOnly"
+                        type="text"
+                        inputmode="decimal"
+                        pattern="[0-9]*"
+                        @input="updatedmNormalPrice"
                       >
                         <template v-slot:label>
                           <span style="color: red">*</span> ราคา
@@ -325,13 +347,17 @@
                     <!-- ราคาตรวจสอบ -->
                     <v-col cols="12" sm="4" md="4" class="filter-col">
                       <v-text-field
-                        v-model="mReviewPrice"
+                        v-model="formattedmReviewPrice"
                         outlined
                         dense
                         class="input-field"
-                        maxlength="5"
+                        maxlength="8"
+                        type="text"
+                        inputmode="decimal"
+                        pattern="[0-9]*"
                         @keydown="keyFilter.numbersOnly"
                         prepend-inner-icon="mdi-cash"
+                        @input="updatedmReviewPrice"
                       >
                         <template v-slot:label>
                           <span style="color: red">*</span> ราคาตรวจสอบ
@@ -380,31 +406,52 @@
                 </v-card>
               </v-container>
 
-              <v-col cols="12" sm="4" md="3" class="filter-col">
+              <v-col cols="12" sm="4" md="2" class="filter-col" v-if="!showDetail()">
                 <v-autocomplete
-                  v-model="mProduct"
-                  :items="iFilterProduct"
-                  item-title="display"
-                  item-value="key"
+                  v-model="selectedProduct"
+                  :items="filteredProductNames"
+                  multiple
                   outlined
                   dense
-                  class="filter-select input-field"
+                  class="filter-select input-field custom-autocomplete"
                   return-object
+                  clearable
+                  :color="'primary'"
+                  active-class="custom-active-class"
                   ><template v-slot:label> ยี่ห้อ </template></v-autocomplete
                 >
               </v-col>
-              <v-col cols="12" sm="4" md="3" class="filter-col">
+              <v-col cols="12" sm="4" md="2" class="filter-col" v-if="!showDetail()">
                 <v-autocomplete
-                  item-title="display"
-                  item-value="materialCode"
+                  v-model="selectedProductGroup"
+                  :items="filteredProductGroups"
+                  multiple
                   outlined
                   dense
-                  class="filter-select input-field"
+                  class="filter-select input-field custom-autocomplete"
                   return-object
+                  clearable
+                  :color="'primary'"
+                  active-class="custom-active-class"
                   ><template v-slot:label> กลุ่มสินค้า </template></v-autocomplete
                 >
               </v-col>
-              <v-col cols="12" sm="4" md="6" class="filter-col">
+              <v-col cols="12" sm="4" md="3" class="filter-col" v-if="!showDetail()">
+                <v-autocomplete
+                  v-model="selectedColor"
+                  :items="filteredColors"
+                  multiple
+                  outlined
+                  dense
+                  class="filter-select input-field custom-autocomplete"
+                  return-object
+                  clearable
+                  :color="'primary'"
+                  active-class="custom-active-class"
+                  ><template v-slot:label> สี </template></v-autocomplete
+                >
+              </v-col>
+              <v-col cols="12" sm="4" md="5" class="filter-col" v-if="!showDetail()">
                 <v-text-field
                   v-model="mSearchDetail"
                   label="Search"
@@ -415,7 +462,7 @@
                 ></v-text-field>
               </v-col>
             </v-row>
-            <v-row class="mt-5">
+            <v-row class="mt-5" v-if="!showDetail()">
               <v-data-table
                 :headers="dialogHeader"
                 :items="filteredReservationsDetail"
@@ -424,6 +471,24 @@
                 dense
                 rounded
               >
+                <template v-slot:item.sequenceID="{ item }">
+                  <div class="flex items-center gap-2">
+                    {{ item.sequenceID }}
+                    <v-icon v-if="item.flagEdit" color="success" size="18"
+                      >mdi-check</v-icon
+                    >
+                  </div>
+                </template>
+                <template v-slot:item.normalPrice="{ item }">
+                  <div class="flex items-center gap-2 justify-end text-right">
+                    {{ formatNumber(item.normalPrice, 2) }}
+                  </div>
+                </template>
+                <template v-slot:item.reviewPrice="{ item }">
+                  <div class="flex items-center gap-2 justify-end text-right">
+                    {{ formatNumber(item.reviewPrice, 2) }}
+                  </div>
+                </template>
                 <template v-slot:item.actions="{ item }">
                   <div class="action-buttons">
                     <!-- Edit Tooltip -->
@@ -444,37 +509,18 @@
                         </v-btn>
                       </template>
                     </v-tooltip>
-
-                    <!-- Delete Tooltip -->
-                    <v-tooltip
-                      text="ลบรายการ"
-                      location="bottom"
-                      color="red"
-                      text-color="white"
-                    >
-                      <template v-slot:activator="{ props }">
-                        <v-btn
-                          icon
-                          variant="text"
-                          v-bind="props"
-                          @click="deleteDraffTransaction(item)"
-                        >
-                          <v-icon color="red">mdi-delete-outline</v-icon>
-                        </v-btn>
-                      </template>
-                    </v-tooltip>
                   </div>
                 </template>
               </v-data-table>
             </v-row>
           </v-form>
-          <v-row class="d-flex justify-center">
+          <v-row class="d-flex justify-center" v-if="!showDetail()">
             <v-btn
               color="success"
               large
               elevation="6"
               class="rounded-xl text-white font-weight-bold px-8 py-2 transition mt-5"
-              @click="submitForm"
+              @click="submitFormDetail"
             >
               <v-icon left>mdi-check-circle-outline</v-icon> บันทึก
             </v-btn>
@@ -517,7 +563,9 @@ import {
   gTransactionPricePreview,
   gPriceReviewDetail,
   pPriceReviewDetail,
+  pDeletedPriceReview
 } from "@/services/apiISM";
+import Swal from "sweetalert2";
 
 const userStore = useUserStore();
 // ดึง groups จาก userStore
@@ -571,7 +619,6 @@ const determineFetchData = (userGroups, userStore) => {
   }
   return data;
 };
-const selected = ref([]);
 const isLoading = ref(false);
 const showSnackbar = ref(false);
 const msgSnackbar = ref("");
@@ -601,16 +648,17 @@ const headers = [
   { title: "ดำเนินการ", align: "left", key: "actions" },
 ];
 const dialogHeader = [
-  { title: "ลำดับ", align: "left", key: "sequenceID" },
-  { title: "ยี่ห้อ", align: "left", key: "productName" },
-  { title: "กลุ่มสินค้า", align: "left", key: "productGroup" },
-  { title: "สี", align: "left", key: "color" },
-  { title: "ขนาด", align: "left", key: "size" },
-  { title: "ราคาสินค้า", align: "left", key: "normalPrice" },
-  { title: "ราคาตรวจสอบ", align: "left", key: "reviewPrice" },
-  { title: "หมายเหตุ", align: "left", key: "remark" },
-  { title: "ดำเนินการ", align: "left", key: "actions" },
+  { title: "ลำดับ", align: "start", key: "sequenceID" },
+  { title: "ยี่ห้อ", align: "start", key: "productName" },
+  { title: "กลุ่มสินค้า", align: "start", key: "productGroup" },
+  { title: "สี", align: "start", key: "color" },
+  { title: "ขนาด", align: "start", key: "size" },
+  { title: "ราคาสินค้า", align: "end", key: "normalPrice" },
+  { title: "ราคาตรวจสอบ", align: "end", key: "reviewPrice" },
+  { title: "หมายเหตุ", align: "start", key: "remark" },
+  { title: "ดำเนินการ", align: "center", key: "actions" },
 ];
+
 // ฟังก์ชันแปลงวันที่เป็น yyyyMMdd
 const getFirstDayOfMonth = () => {
   const today = new Date();
@@ -646,13 +694,106 @@ const createPriceReview = () => {
   dialog.value = true;
   flagCreate.value = true;
 };
-const searchPriceReview = () => {};
-const closePriceReview = () => {};
+
 const resetForm = () => {
   dialog.value = false;
   flagCreate.value = false;
+  selectPriceReview.value = [];
+  rawReservationsDetail.value = [];
+  selectedProduct.value = [];
+  selectedProductGroup.value = [];
+  selectedColor.value = [];
+  mSearchDetail.value = null;
+  mBranch.value = null;
+  dateReview.value = getTodayYYYYMMDD();
+  clearDataEdit();
 };
+const updatedmNormalPrice = (event) => {
+  let value = event.target.value.replace(/,/g, "");
 
+  if (value === "") {
+    mNormalPrice.value = "0";
+    return;
+  }
+
+  if (value === ".") {
+    mNormalPrice.value = "0.";
+    return;
+  }
+
+  const numberRegex = /^\d*\.?\d*$/;
+  if (numberRegex.test(value)) {
+    mNormalPrice.value = value;
+  }
+};
+// คำนวณฟอร์แมตราคาแบบมี comma
+const formattedmNormalPrice = computed({
+  get() {
+    if (!mNormalPrice.value) return "0";
+
+    const value = Number(mNormalPrice.value);
+    if (isNaN(value)) return "0";
+
+    return value.toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  },
+  set(val) {
+    let cleanedValue = val.replace(/,/g, "").trim();
+    if (cleanedValue === "" || cleanedValue === ".") {
+      mNormalPrice.value = "0";
+    } else {
+      mNormalPrice.value = cleanedValue;
+    }
+  },
+});
+
+const updatedmReviewPrice = (event) => {
+  let value = event.target.value.replace(/,/g, "");
+
+  if (value === "") {
+    mReviewPrice.value = "0";
+    return;
+  }
+
+  if (value === ".") {
+    mReviewPrice.value = "0.";
+    return;
+  }
+
+  const numberRegex = /^\d*\.?\d*$/;
+  if (numberRegex.test(value)) {
+    mReviewPrice.value = value;
+  }
+};
+// คำนวณฟอร์แมตราคาแบบมี comma
+const formattedmReviewPrice = computed({
+  get() {
+    if (!mReviewPrice.value) return "0";
+
+    const value = Number(mReviewPrice.value);
+    if (isNaN(value)) return "0";
+
+    return value.toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  },
+  set(val) {
+    let cleanedValue = val.replace(/,/g, "").trim();
+    if (cleanedValue === "" || cleanedValue === ".") {
+      mReviewPrice.value = "0";
+    } else {
+      mReviewPrice.value = cleanedValue;
+    }
+  },
+});
+
+const showDetail = () => {
+  if (flagCreate.value == true) return true;
+  return false;
+};
 watch(
   () => flagPrice.value,
   (newVal) => {
@@ -735,7 +876,16 @@ const formatDate = (yyyymmdd) => {
   return `${day}/${month}/${year}`;
 };
 
+const showSnackbars = (message, color = "yellow") => {
+  msgSnackbar.value = message;
+  snackbarColor.value = color;
+  showSnackbar.value = true;
+};
+
 const createPriceReviewHead = async () => {
+  if (!mBranch.value) {
+    showSnackbars("กรุณาเลือกสาขา");
+  }
   isLoading.value = true;
   try {
     const data = {
@@ -747,15 +897,50 @@ const createPriceReviewHead = async () => {
       empID: userStore.empId,
     };
     const response = await pPriceReviewHead(data);
+    if (response.status == 409) {
+      showSnackbars("วันที่ตรวจสอบและสาขา มีการสร้างแล้ว");
+    } else {
+      dialog.value = false;
+      Swal.fire({
+        icon: "success",
+        title: "บันทึกรายการสำเร็จ 🎉",
+        html: `เลขที่ตรวจสอบราคา <strong>"${response.results}"</strong>`,
+        confirmButtonText: "ตกลง",
+        confirmButtonColor: "#007fc4",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          document.querySelector(".swal2-confirm").style.color = "white";
+        },
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          dialog.value = true;
+          clearDataEdit();
+          await fetchTransactionPricePreview();
+          const matchedReservation = rawReservations.value.find(
+            (item) => item.reviewID === response.results
+          );
+
+          editItem(matchedReservation);
+        }
+      });
+    }
   } catch (error) {
     console.error("เกิดข้อผิดพลาด:", error);
   } finally {
     isLoading.value = false;
   }
 };
-const canShowButtonDelete = () => {};
+const canShowButtonDelete = () => {
+  const isAdmin = ["ISM_ADMIN", "ISM_MANAGER"].some((role) =>
+    userGroups.value.includes(role)
+  );
+  return isAdmin;
+};
 
 const editItem = async (item) => {
+  flagCreate.value = false;
+  selectPriceReview.value = item;
   dateReview.value = item.reviewDate;
   mBranch.value = {
     soldto: item.branchCode,
@@ -770,43 +955,72 @@ const editItem = async (item) => {
 
 const fetchTransactionPricePreviewDetail = async (data) => {
   isLoading.value = true;
+  rawReservationsDetail.value = [];
   try {
     const response = await gPriceReviewDetail(data);
-    rawReservationsDetail.value = response.results;
+    rawReservationsDetail.value = response.results.map((item) => ({
+      ...item,
+      flagEdit: false,
+    }));
   } catch (error) {
     console.error("เกิดข้อผิดพลาดในการโหลดข้อมูล:", error);
   } finally {
     isLoading.value = false;
   }
 };
-const mProduct = ref(null);
 
-// const iFilterProduct = computed(() => {
-//   const productMap = new Map();
+// ตัวแปรสำหรับเก็บค่าที่เลือก
+const selectedProduct = ref([]); // ✅ ไม่มี string ว่าง
+const selectedProductGroup = ref([]);
+const selectedColor = ref([]);
 
-//   rawReservationsDetail.value.forEach((item) => {
-//     if (item.productCode && item.productName) {
-//       productMap.set(item.productCode, item.productName);
-//     }
-//   });
+function cleanText(text) {
+  return (text || "").trim().replace(/^,/, "");
+}
 
-//   return Array.from(productMap, ([key, name]) => ({
-//     key,
-//     display: `${name} (${key})`,
-//   }));
-// });
+// ดึง option ของ ProductName ที่สัมพันธ์กับที่เลือก
+const filteredProductNames = computed(() => {
+  const filtered = filteredReservationsDetail.value.map((p) => cleanText(p.productName));
+  return [...new Set(filtered)];
+});
 
-const selectedProduct = computed(() =>
-  Array.isArray(mProduct.value) ? mProduct.value.map((i) => i.key) : []
-);
+// ดึง option ของ ProductGroup ที่สัมพันธ์กับที่เลือก
+const filteredProductGroups = computed(() => {
+  const filtered = filteredReservationsDetail.value.map((p) => cleanText(p.productGroup));
+  return [...new Set(filtered)];
+});
 
+// ดึง option ของ Color ที่สัมพันธ์กับที่เลือก
+const filteredColors = computed(() => {
+  const filteredColorsArray = filteredReservationsDetail.value.flatMap(
+    (p) =>
+      (p.color || "")
+        .split(",")
+        .map((c) => cleanText(c))
+        .filter((c) => c.length > 0) // กันกรณี split แล้วได้ค่าว่าง
+  );
+  return [...new Set(filteredColorsArray)];
+});
+
+// Filter ข้อมูลหลัก
 const filteredReservationsDetail = computed(() => {
   return rawReservationsDetail.value.filter((item) => {
-    const matchProduct =
+    const matchProductName =
       selectedProduct.value.length === 0 ||
-      selectedProduct.value.includes(item.productName);
+      selectedProduct.value.includes(item.productName.trim());
 
-    return matchProduct;
+    const matchProductGroup =
+      selectedProductGroup.value.length === 0 ||
+      selectedProductGroup.value.includes(item.productGroup.trim());
+
+    const matchColor =
+      selectedColor.value.length === 0 ||
+      item.color
+        .split(",")
+        .map((c) => c.trim())
+        .some((c) => selectedColor.value.includes(c));
+
+    return matchProductName && matchProductGroup && matchColor;
   });
 });
 const scrollContainer = ref(null);
@@ -831,13 +1045,10 @@ const saveEditDetail = () => {
   if (index !== -1) {
     rawReservationsDetail.value[index].reviewPrice = mReviewPrice.value;
     rawReservationsDetail.value[index].remark = mRemark.value;
+    rawReservationsDetail.value[index].flagEdit = true;
 
     // เคลียร์สถานะหลังบันทึก
-    isEditDetailMode.value = false;
-    mNormalPrice.value = null;
-    editId.value = null;
-    mReviewPrice.value = "";
-    mRemark.value = "";
+    clearDataEdit();
   }
 };
 
@@ -849,9 +1060,131 @@ const clearDataEdit = () => {
   mRemark.value = null;
   editId.value = null;
 };
-onMounted(async () => {
+const submitFormDetail = async () => {
+  isLoading.value = true;
+  try {
+    const transformedData = {
+      reviewID:
+        rawReservationsDetail.value.length > 0
+          ? rawReservationsDetail.value[0].reviewID
+          : "",
+      empID: userStore.empId,
+      detail: rawReservationsDetail.value.map((item) => ({
+        sequenceID: item.sequenceID,
+        productCode: item.productCode,
+        productName: item.productName,
+        productGroup: item.productGroup,
+        color: item.color,
+        size: item.size,
+        normalPrice: item.normalPrice,
+        reviewPrice: item.reviewPrice,
+        promoLabel: item.promoLabel,
+        remark: item.remark,
+      })),
+    };
+
+    await pPriceReviewDetail(transformedData);
+    dialog.value = false;
+    Swal.fire({
+      icon: "success",
+      title: "บันทึกรายการสำเร็จ 🎉",
+      confirmButtonText: "ตกลง",
+      confirmButtonColor: "#007fc4",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        document.querySelector(".swal2-confirm").style.color = "white";
+      },
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        dialog.value = true;
+        clearDataEdit();
+
+        await fetchTransactionPricePreview();
+        const matchedReservation = rawReservations.value.find(
+          (item) => item.reviewID === transformedData.reviewID
+        );
+        editItem(matchedReservation);
+      }
+    });
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการโหลดข้อมูล:", error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+const formatNumber = (value, decimalPlaces = 0) => {
+  if (value === null || value === undefined || value === "") {
+    return decimalPlaces > 0 ? "0.00" : "0";
+  }
+
+  // แปลงค่าเป็นตัวเลข
+  let num = parseFloat(value);
+  if (isNaN(num)) return decimalPlaces > 0 ? "0.00" : "0";
+
+  // ใช้ Intl.NumberFormat เพื่อเพิ่ม comma และทศนิยม
+  return num.toLocaleString("en-US", {
+    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: decimalPlaces,
+  });
+};
+const searchPriceReview = () => {
   fetchTransactionPricePreview();
   sDisabledDate.value = true;
+};
+const closePriceReview = () => {
+  sDisabledDate.value = false;
+  mFilterAccount.value = null;
+  mSearch.value = null;
+  rawReservations.value = [];
+  rawReservationsDetail.value = [];
+  resetForm();
+  clearDataEdit();
+};
+
+const deleteItem = (item) => {
+  Swal.fire({
+    html: `คุณแน่ใจหรือไม่ว่าต้องการลบรายการตรวจสอบราคา <br/> เลขที่ <strong>"${item.reviewID}"</strong> ?`,
+    icon: "warning",
+    showCancelButton: true,
+    allowOutsideClick: false,
+    confirmButtonText: "OK",
+    didOpen: () => {
+      document.querySelector(".swal2-confirm").style.color = "white";
+      document.querySelector(".swal2-cancel").style.color = "white";
+    },
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      isLoading.value = true;
+      try {
+        const init = {
+          reviewID: item.reviewID,
+        };
+        await pDeletedPriceReview(init);
+        Swal.fire({
+          html: `ลบรายการตรวจสอบราคา เลขที่ ${item.reviewID} สำเร็จ 🎉`,
+          icon: "success",
+          confirmButtonText: "OK",
+          didOpen: () => {
+            document.querySelector(".swal2-confirm").style.color = "white";
+          },
+        }).then((result) => {
+          if (result.isConfirmed) {
+            resetForm();
+            searchPriceReview();
+          }
+        });
+      } catch (e) {
+        console.log(e);
+      } finally {
+        isLoading.value = false;
+      }
+    }
+  });
+};
+
+
+onMounted(async () => {
   const dataForCustomers = determineFetchData(userGroups.value, userStore);
   fetchMasterCustomers(dataForCustomers);
 });
@@ -929,7 +1262,7 @@ onMounted(async () => {
   flex: 1; /* ใช้ flex เต็มพื้นที่ */
   text-align: center;
   font-weight: bold;
-  color: white;
+  color: #1e1e1e;
 }
 
 /* Dialog Card Styles */

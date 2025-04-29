@@ -50,7 +50,7 @@ export default {
         if (
           (charCode < 48 || charCode > 57) && // ตัวเลขหลัก
           (charCode < 96 || charCode > 105) && // ตัวเลขจาก Numpad
-          charCode !== 46 // จุดทศนิยม
+          charCode == 46 // จุดทศนิยม
         ) {
           event.preventDefault();
         }

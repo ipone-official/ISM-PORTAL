@@ -159,7 +159,7 @@
           style="background-color: #ffca28; border-radius: 16px"
         >
           <v-row align="center" dense>
-            <v-col cols="12" class="text-center text-white font-weight-bold text-h6">
+            <v-col cols="12" class="text-center font-weight-bold text-h6 centered-title">
               รายการพื้นที่พิเศษ
             </v-col>
             <v-col
@@ -1267,7 +1267,7 @@ onMounted(async () => {
   flex: 1; /* ใช้ flex เต็มพื้นที่ */
   text-align: center;
   font-weight: bold;
-  color: white;
+  color: #1e1e1e;
 }
 
 /* Dialog Card Styles */

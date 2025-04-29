@@ -142,3 +142,19 @@ export const pPriceReviewDetail = async (item) => {
     throw error;
   }
 };
+
+export const pDeletedPriceReview = async (item) => {
+  try {
+    const response = await api.delete(`pDeletedPriceReview`, {
+      data: item, // ส่งข้อมูลใน Body
+      headers: {
+        "Content-Type": "application/json", // กำหนด Content-Type
+      },
+    });
+
+    return response.data; // ส่งคืนข้อมูลเมื่อสำเร็จ
+  } catch (error) {
+    console.error('❌ Error pDeletedPriceReview:', error);
+    throw error;
+  }
+};
