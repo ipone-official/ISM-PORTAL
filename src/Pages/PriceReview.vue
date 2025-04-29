@@ -492,13 +492,6 @@
                 <template v-slot:item.actions="{ item }">
                   <div class="action-buttons">
                     <!-- Edit Tooltip -->
-                    <v-tooltip
-                      text="แก้ไข"
-                      location="bottom"
-                      color="blue"
-                      text-color="white"
-                    >
-                      <template v-slot:activator="{ props }">
                         <v-btn
                           icon
                           variant="text"
@@ -507,8 +500,6 @@
                         >
                           <v-icon color="blue">mdi-pencil-outline</v-icon>
                         </v-btn>
-                      </template>
-                    </v-tooltip>
                   </div>
                 </template>
               </v-data-table>
