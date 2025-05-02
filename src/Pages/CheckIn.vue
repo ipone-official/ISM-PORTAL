@@ -5,11 +5,10 @@
       <v-row class="mb-2" dense>
         <v-col cols="12" md="6">
           <v-alert
-            type="primary"
             variant="tonal"
             border="start"
             density="compact"
-            class="pa-3 text-md-start text-start"
+            class="pa-3 text-md-start text-start custom-yellow-alert"
           >
             <v-icon start class="mr-2">mdi-map-marker</v-icon>
             <strong>พิกัดปัจจุบัน:</strong>
@@ -19,11 +18,10 @@
 
         <v-col cols="12" md="6">
           <v-alert
-            type="primary"
             variant="tonal"
             border="start"
             density="compact"
-            class="pa-3 text-md-end text-start"
+            class="pa-3 text-md-start text-start custom-yellow-alert"
           >
             <v-icon start class="mr-2">mdi-clock-time-four</v-icon>
             <strong>เวลา:</strong>
@@ -36,24 +34,42 @@
 
       <!-- 🔽 Autocomplete -->
       <v-row>
-        <v-col cols="12">
+        <v-col cols="12" sm="6" md="6">
           <v-autocomplete
-            v-model="selectedItem"
-            :items="items"
-            label="เลือกสถานที่"
-            item-title="display"
-            item-value="key"
+            v-model="mHolidayType"
+            :items="iHolidayType"
+            label="ประเภททำงาน"
+            item-title="holidayDesc"
+            item-value="holidayTypeID"
             return-object
             variant="outlined"
             density="comfortable"
             color="primary"
             prepend-inner-icon="mdi-map-search"
+            class="filter-select input-field"
+            :readonly="hasCheckedIn"
+          />
+        </v-col>
+        <v-col cols="12" sm="6" md="6">
+          <v-autocomplete
+            v-model="mBranch"
+            :items="iBranch"
+            label="เลือกสถานที่"
+            item-title="display"
+            item-value="soldto"
+            return-object
+            variant="outlined"
+            density="comfortable"
+            color="primary"
+            prepend-inner-icon="mdi-map-search"
+            class="filter-select input-field"
+            :readonly="hasCheckedIn"
           />
         </v-col>
       </v-row>
 
       <!-- 📌 พิกัดของสถานที่ที่เลือก -->
-      <v-row v-if="selectedItem">
+      <v-row v-if="mBranch">
         <v-col cols="12" md="6">
           <v-alert
             type="primary"
@@ -62,8 +78,8 @@
             density="compact"
             class="pa-3 text-md-start text-start"
           >
-            📌 {{ selectedItem.display }}: {{ selectedItem.lat?.toFixed(6) }},
-            {{ selectedItem.lon?.toFixed(6) }}
+            📌 {{ mBranch.display }}: {{ latitudeFormatted }},
+            {{ longitudeFormatted }}
           </v-alert>
         </v-col>
         <v-col cols="12" md="6">
@@ -83,8 +99,8 @@
           <v-btn
             color="green"
             prepend-icon="mdi-directions"
-            :disabled="!selectedItem"
-            @click="openGoogleNavigation(selectedItem.lat, selectedItem.lon)"
+            :disabled="!mBranch"
+            @click="openGoogleNavigation(mBranch.lat, mBranch.lon)"
           >
             เปิดนำทาง Google Maps
           </v-btn>
@@ -100,13 +116,14 @@
       <!-- ✅ ปุ่มเช็คอิน / เช็คเอาท์ -->
       <v-row class="mt-4" align="center" justify="space-between">
         <v-col cols="12" class="text-center">
+          <!--  
+          :disabled="!mBranch || !isWithinRadius" -->
           <v-btn
             color="primary"
-            :disabled="!selectedItem || !isWithinRadius"
-            @click="checkIn"
-            v-if="!hasCheckedIn"
+            @click="checkInOut"
             size="large"
             prepend-icon="mdi-login"
+            v-if="!hasCheckedIn"
           >
             เช็คอิน
           </v-btn>
@@ -114,7 +131,7 @@
           <v-btn
             color="error"
             v-if="hasCheckedIn"
-            @click="checkOut"
+            @click="checkInOut"
             size="large"
             prepend-icon="mdi-logout"
           >
@@ -129,32 +146,33 @@
           <h4 class="text-h6 mb-4">📋 รายการเช็คอิน</h4>
 
           <v-row
-            v-for="(item, i) in [...checkedInItems].slice().reverse()"
+            v-for="(item, i) in checkedInItems"
             :key="i"
             class="align-center py-2 px-3 mb-2 rounded-lg"
             style="border: 1px solid #ddd; background-color: white"
           >
             <v-col cols="12" md="3" class="text-subtitle-1 font-weight-medium">
               <v-icon color="primary" size="22" class="mr-2">mdi-map-marker-check</v-icon>
-              {{ item.display }}
+              {{ item.branchName }}
             </v-col>
 
             <v-col cols="12" md="3" class="text-body-1 text-grey-darken-1">
-              ✅ <strong>เช็คอิน:</strong> {{ item.checkedInTime }}
+              ✅ <strong>เช็คอิน:</strong> {{ formatDateTime(item.checkedIn) }}
             </v-col>
 
             <v-col cols="12" md="4" class="text-body-1">
-              <span v-if="item.checkedOutTime">
-                ⏹️ <strong>เช็คเอ้าท์:</strong> {{ item.checkedOutTime }}<br />
+              <span v-if="item.checkedOut">
+                ⏹️ <strong>เช็คเอ้าท์:</strong> {{ formatDateTime(item.checkedOut)
+                }}<br />
                 ⏱️ <strong>อยู่:</strong>
-                {{ calculateDuration(item.checkedInTime, item.checkedOutTime) }}
+                {{ calculateDuration(item.checkedIn, item.checkedOut) }}
               </span>
               <span v-else class="text-warning font-italic"> ⏳ ยังไม่เช็คเอ้าท์ </span>
             </v-col>
 
             <v-col cols="12" md="2" class="text-end">
               <v-btn
-                v-if="!item.checkedOutTime && i === 0"
+                v-if="!item.checkedOut && i === 0"
                 color="error"
                 variant="elevated"
                 size="small"
@@ -168,6 +186,16 @@
         </v-col>
       </v-row>
     </v-card>
+    <v-snackbar
+      v-model="showSnackbar"
+      :timeout="3000"
+      :color="snackbarColor"
+      rounded="pill"
+      class="text-center"
+    >
+      {{ msgSnackbar }}
+    </v-snackbar>
+    <loading :isLoading="isLoading" />
   </v-container>
 </template>
 <script setup>
@@ -178,35 +206,99 @@ import duration from "dayjs/plugin/duration";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as turf from "@turf/turf";
+import {
+  gMasterCustomers,
+  gMHolidayTypes,
+  pInsertWorkSessions,
+  gWorkSessionsBy,
+} from "@/services/apiISM";
+import { useUserStore } from "@/stores/userStore";
 
 dayjs.extend(duration);
 
-const items = [
-  { key: 1, display: "ออฟฟิศ", lat: 13.7765941, lon: 100.669607 },
-  { key: 2, display: "บ้าน", lat: 13.816193, lon: 100.610403 },
-  { key: 3, display: "ร้านกาแฟ", lat: 13.75, lon: 100.51 },
-];
-
-const selectedItem = ref(null);
+const mBranch = ref(null);
+const iBranch = ref([]);
 const currentLat = ref(null);
 const currentLon = ref(null);
 const currentTime = ref("");
 const hasCheckedIn = ref(false);
 const checkedInItems = ref([]);
+const notCheckedOutItems = ref([]);
 const userPositionReady = ref(false);
 let interval = null;
 const routeSummary = ref("");
 const hasAlertedLocationError = ref(false);
 let currentLocationMarker = null;
+const mHolidayType = ref(null);
+const iHolidayType = ref([]);
+
+const showSnackbar = ref(false);
+const msgSnackbar = ref("");
+const snackbarColor = ref("success");
 
 const map = ref(null);
 
+const userStore = useUserStore();
+// ดึง groups จาก userStore
+const userGroups = computed(() => userStore.group || []);
+
+const rolesPriority = [
+  "ISM_ADMIN",
+  "ISM_MANAGER",
+  "ISM_PC_BKK1",
+  "ISM_PC_BKK2",
+  "ISM_PC_BKK3",
+  "ISM_PC_BKK4",
+  "ISM_PC_BKK5",
+  "ISM_PC_UPC1",
+  "ISM_PC_UPC2",
+  "ISM_PC_UPC3",
+  "ISM_PC_UPC4",
+  "ISM_PC_UPC5",
+  "ISM_PC_UPC6",
+  "ISM_PC_UPC7",
+  "ISM_PC_UPC8",
+  "ISM_SUPERVISOR_BKK1",
+  "ISM_SUPERVISOR_BKK2",
+  "ISM_SUPERVISOR_BKK3",
+  "ISM_SUPERVISOR_BKK4",
+  "ISM_SUPERVISOR_BKK5",
+  "ISM_SUPERVISOR_UPC1",
+  "ISM_SUPERVISOR_UPC2",
+  "ISM_SUPERVISOR_UPC3",
+  "ISM_SUPERVISOR_UPC4",
+  "ISM_SUPERVISOR_UPC5",
+  "ISM_SUPERVISOR_UPC6",
+  "ISM_SUPERVISOR_UPC7",
+  "ISM_SUPERVISOR_UPC8",
+];
+
+const mapRole = (userRoles = []) => {
+  return rolesPriority.find((role) => userRoles.includes(role)) || null;
+};
+
+const determineFetchData = (userGroups, userStore) => {
+  const role = mapRole(userGroups);
+
+  let data;
+  if (role === "ISM_ADMIN" || role === "ISM_MANAGER") {
+    data = "ALL";
+  } else if (role?.startsWith("ISM_SUPERVISOR")) {
+    // data = role.split("_").pop();
+    data = role;
+  } else {
+    data = userStore.empId;
+  }
+  return data;
+};
+
+const isLoading = ref(false);
 const orsApiKey = "5b3ce3597851110001cf624825291faac30d48ce9c22d595f3c69981";
 
 let startMarker = null;
 let endMarker = null;
-let routeTimeout = null;
-let radiusCircle = null;
+// let routeTimeout = null;
+// let radiusCircle = null;
 
 const createCustomIcon = (mdiIcon, color) => {
   const el = document.createElement("div");
@@ -266,27 +358,45 @@ const markAndCalculateOnly = (lat, lon) => {
   map.value.flyTo({ center: [lon, lat], zoom: 15 });
 };
 
-watch(selectedItem, () => {
-  if (selectedItem.value) {
-    markAndCalculateOnly(selectedItem.value.lat, selectedItem.value.lon);
+watch(mBranch, () => {
+  const lat = parseFloat(mBranch.value?.latitude);
+  const lon = parseFloat(mBranch.value?.longitude);
+
+  if (
+    mBranch.value &&
+    userPositionReady.value &&
+    !isNaN(lat) &&
+    !isNaN(lon) &&
+    lat !== 0 &&
+    lon !== 0
+  ) {
+    markAndCalculateOnly(lat, lon);
   }
 });
 
-// watch(selectedItem, () => {
+const latitudeFormatted = computed(() => {
+  const lat = parseFloat(mBranch.value.latitude);
+  return isNaN(lat) ? 0.0 : lat.toFixed(6);
+});
+const longitudeFormatted = computed(() => {
+  const lat = parseFloat(mBranch.value.longitude);
+  return isNaN(lat) ? 0.0 : lat.toFixed(6);
+});
+// watch(mBranch, () => {
 //   if (userPositionReady.value) {
 //     updateMapView();
 //   }
 // });
-// watch(selectedItem, () => {
+// watch(mBranch, () => {
 //   if (routeTimeout) clearTimeout(routeTimeout);
 
 //   routeTimeout = setTimeout(() => {
-//     if (selectedItem.value && currentLat.value != null && currentLon.value != null) {
+//     if (mBranch.value && currentLat.value != null && currentLon.value != null) {
 //       getRouteAndDraw(
 //         currentLat.value,
 //         currentLon.value,
-//         selectedItem.value.lat,
-//         selectedItem.value.lon
+//         mBranch.value.lat,
+//         mBranch.value.lon
 //       );
 //     }
 //   }, 500);
@@ -382,15 +492,15 @@ const getRouteAndDraw = async (fromLat, fromLon, toLat, toLon) => {
 const updateMapView = () => {
   if (
     !map.value ||
-    !selectedItem.value ||
+    !mBranch.value ||
     currentLat.value == null ||
     currentLon.value == null
   )
     return;
 
-  const { lat, lon } = selectedItem.value;
+  const { latitude, longitude } = mBranch.value;
 
-  getRouteAndDraw(currentLat.value, currentLon.value, lat, lon);
+  getRouteAndDraw(currentLat.value, currentLon.value, latitude, longitude);
 };
 
 const formatTime = (date) => {
@@ -404,11 +514,14 @@ const formatTime = (date) => {
 
 const calculateDuration = (checkIn, checkOut) => {
   if (!checkIn || !checkOut) return null;
-  const start = dayjs(`2024-01-01 ${checkIn}`, "YYYY-MM-DD HH:mm:ss");
-  const end = dayjs(`2024-01-01 ${checkOut}`, "YYYY-MM-DD HH:mm:ss");
+
+  const start = dayjs(checkIn, "YYYYMMDD HH:mm");
+  const end = dayjs(checkOut, "YYYYMMDD HH:mm");
+
   const diff = dayjs.duration(end.diff(start));
   const h = diff.hours();
   const m = diff.minutes();
+
   return `${h > 0 ? `${h} ชม.` : ""} ${m} นาที`;
 };
 
@@ -424,13 +537,13 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 const isWithinRadius = computed(() => {
-  if (!selectedItem.value || currentLat.value == null || currentLon.value == null)
+  if (!mBranch.value || currentLat.value == null || currentLon.value == null)
     return false;
   const d = getDistance(
     currentLat.value,
     currentLon.value,
-    selectedItem.value.lat,
-    selectedItem.value.lon
+    mBranch.value.latitude,
+    mBranch.value.longitude
   );
   return d <= 1000;
 });
@@ -487,7 +600,7 @@ const getLocation = async () => {
     currentLon.value = lon;
     hasAlertedLocationError.value = false;
 
-    if (map.value) {
+    if (map.value && map.value.isStyleLoaded()) {
       if (currentLocationMarker) {
         currentLocationMarker.setLngLat([lon, lat]);
       } else {
@@ -497,6 +610,8 @@ const getLocation = async () => {
           .setLngLat([lon, lat])
           .addTo(map.value);
       }
+    } else {
+      console.warn("🕗 map ยังโหลดไม่สมบูรณ์ เลยยังไม่วาง marker");
     }
   }
 
@@ -515,30 +630,83 @@ const getLocation = async () => {
     currentLon.value = "ไม่สามารถเข้าถึง";
   }
 };
-
-
-const checkIn = () => {
-  const now = formatTime(new Date());
-  checkedInItems.value.push({
-    ...selectedItem.value,
-    checkedInTime: now,
-    checkedOutTime: null,
-  });
-  hasCheckedIn.value = true;
+const resetForm = () => {
+  mHolidayType.value = {
+    holidayTypeID: "H01",
+    holidayDesc: "วันทำงานปกติ",
+  };
+  mBranch.value = null;
+  hasCheckedIn.value = false;
+  checkedInItems.value = [];
+  notCheckedOutItems.value = [];
+};
+const showSnackbars = (message, color = "yellow") => {
+  msgSnackbar.value = message;
+  snackbarColor.value = color;
+  showSnackbar.value = true;
 };
 
-const checkOut = () => {
-  const now = formatTime(new Date());
-  const lastIndex = [...checkedInItems.value]
-    .reverse()
-    .findIndex((item) => !item.checkedOutTime);
-
-  if (lastIndex !== -1) {
-    const realIndex = checkedInItems.value.length - 1 - lastIndex;
-    checkedInItems.value[realIndex].checkedOutTime = now;
+const checkInOut = async () => {
+  isLoading.value = true;
+  if (!mBranch.value) {
+    return showSnackbars("กรุณาเลือกสถานที่");
   }
+  try {
+    const data = {
+      wsID: notCheckedOutItems.value.length != 0 ? notCheckedOutItems.value[0].wsID : "",
+      userID: userStore.empId,
+      latitude: mBranch.value.latitude == 0 ? currentLat.value : mBranch.value.latitude,
+      longitude:
+        mBranch.value.longitude == 0 ? currentLon.value : mBranch.value.longitude,
+      branchCode: mBranch.value.soldto,
+      branchName: mBranch.value.branch,
+      province: mBranch.value.province,
+      holidayTypeID: mHolidayType.value.holidayTypeID,
+      ismArea: mBranch.value.ismArea,
+    };
+    const response = await pInsertWorkSessions(data);
+    Swal.fire({
+      icon: "success",
+      title: "บันทึกรายการสำเร็จ 🎉",
+      html: `บันทึกเวลาเลขที่ <strong>"${response.results}"</strong>`,
+      confirmButtonText: "ตกลง",
+      confirmButtonColor: "#007fc4",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        document.querySelector(".swal2-confirm").style.color = "white";
+      },
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        resetForm();
+        fetchWorkSessionsList(userStore.empId);
+        await nextTick();
 
-  hasCheckedIn.value = false;
+        map.value = new maplibregl.Map({
+          container: "map",
+          style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+          center: [100.669607, 13.7765941],
+          zoom: 13,
+        });
+
+        // ✅ รอ style โหลดก่อนค่อยเริ่มทำงานอื่น ๆ
+        map.value.on("load", () => {
+          const waitForStyle = () => {
+            if (!map.value.isStyleLoaded()) {
+              requestAnimationFrame(waitForStyle);
+            } else {
+              getLocation(); // ✨ เรียกหลัง style พร้อม
+            }
+          };
+          waitForStyle();
+        });
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error pInsertWorkSessions:", error);
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const removeLastCheckIn = () => {
@@ -555,25 +723,164 @@ const updateTime = () => {
   currentTime.value = formatTime(new Date());
 };
 
+const fetchMasterCustomers = async (data) => {
+  isLoading.value = true;
+  try {
+    const response = await gMasterCustomers(data);
+    iBranch.value = response.results.map((item) => ({
+      ...item,
+      display: `${item.soldto} - ${item.branch}`,
+    }));
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการโหลดข้อมูล:", error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const formatDateTime = (input) => {
+  const datePart = input.substring(0, 8);
+  const timePart = input.substring(9, 14);
+
+  const year = datePart.substring(0, 4);
+  const month = datePart.substring(4, 6);
+  const day = datePart.substring(6, 8);
+
+  return `${day}/${month}/${year} ${timePart}`;
+};
+
+const fetchMasterHolidayType = async () => {
+  isLoading.value = true;
+  try {
+    const response = await gMHolidayTypes();
+    iHolidayType.value = response.results.map((item) => ({
+      ...item,
+    }));
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการโหลดข้อมูล:", error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+const fetchWorkSessionsList = async (item) => {
+  isLoading.value = true;
+  try {
+    const response = await gWorkSessionsBy(item);
+    // map พร้อม flag
+    const mappedItems = response.results.map((item) => ({
+      ...item,
+      isCheckedOut: !!item.checkedOut && item.checkedOut.trim() !== "",
+    }));
+
+    // อัปเดตตัวแปรทั้งหมด
+
+    // ✅ เรียง wsID มาก → น้อย
+    mappedItems.sort((a, b) => {
+      const aNum = parseInt(a.wsID.replace(/\D/g, ""));
+      const bNum = parseInt(b.wsID.replace(/\D/g, ""));
+      return bNum - aNum;
+    });
+
+    checkedInItems.value = mappedItems;
+
+    // กรองเฉพาะรายการที่ยังไม่เช็คเอาท์
+    notCheckedOutItems.value = mappedItems.filter((item) => !item.isCheckedOut);
+    if (notCheckedOutItems.value.length != 0) {
+      hasCheckedIn.value = true;
+      mHolidayType.value = {
+        holidayTypeID: notCheckedOutItems.value[0].holidayTypeID,
+        holidayDesc: notCheckedOutItems.value[0].holidayDesc,
+      };
+      mBranch.value = {
+        soldto: notCheckedOutItems.value[0].branchCode,
+        name: notCheckedOutItems.value[0].branchName,
+        branch: notCheckedOutItems.value[0].branchName,
+        ismArea: notCheckedOutItems.value[0].ismArea,
+        province: notCheckedOutItems.value[0].province,
+        latitude: notCheckedOutItems.value[0].latitude,
+        longitude: notCheckedOutItems.value[0].longitude,
+        display: `${notCheckedOutItems.value[0].branchCode} - ${notCheckedOutItems.value[0].branchName}`,
+      };
+    }
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการโหลดข้อมูล:", error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
 onMounted(async () => {
   await nextTick();
 
-  // สร้างแผนที่
+  // ✅ สร้างแผนที่
   map.value = new maplibregl.Map({
     container: "map",
     style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
     center: [100.669607, 13.7765941],
     zoom: 13,
   });
-  getLocation();
-  updateTime();
-  interval = setInterval(() => {
-    updateTime();
-    getLocation();
-  }, 1000);
+
+  // ✅ รอให้ map โหลด style เสร็จก่อน
+  map.value.on("load", () => {
+    // ✅ เช็คซ้ำด้วย isStyleLoaded() เพื่อความชัวร์
+    const waitForStyle = () => {
+      if (!map.value.isStyleLoaded()) {
+        requestAnimationFrame(waitForStyle);
+      } else {
+        getLocation();
+        updateTime();
+        interval = setInterval(() => {
+          updateTime();
+          getLocation();
+        }, 1000);
+      }
+    };
+    waitForStyle();
+  });
+
+  // ✅ คำสั่งอื่นๆ ที่ไม่เกี่ยวกับ map สามารถเรียกได้ทันที
+  const dataForCustomers = determineFetchData(userGroups.value, userStore);
+  fetchMasterCustomers(dataForCustomers);
+  fetchMasterHolidayType();
+  fetchWorkSessionsList(userStore.empId);
+  mHolidayType.value = {
+    holidayTypeID: "H01",
+    holidayDesc: "วันทำงานปกติ",
+  };
 });
 
 onBeforeUnmount(() => {
   clearInterval(interval);
 });
 </script>
+<style scoped>
+@media (min-width: 600px) {
+  .filter-row {
+    gap: 16px;
+  }
+  .filter-col {
+    margin-bottom: 8px;
+  }
+}
+.input-field {
+  margin-bottom: -2rem;
+  color: #007fc4 !important;
+}
+@media (min-width: 960px) {
+  .filter-row {
+    gap: 24px;
+  }
+  .filter-col {
+    margin-bottom: 0;
+  }
+  .input-field {
+    margin-bottom: -2rem;
+    color: #007fc4 !important;
+  }
+}
+
+.custom-yellow-alert {
+  background-color: #ffca28 !important;
+  color: black !important;
+}
+</style>

@@ -492,14 +492,14 @@
                 <template v-slot:item.actions="{ item }">
                   <div class="action-buttons">
                     <!-- Edit Tooltip -->
-                        <v-btn
-                          icon
-                          variant="text"
-                          v-bind="props"
-                          @click="editReservationsDetail(item)"
-                        >
-                          <v-icon color="blue">mdi-pencil-outline</v-icon>
-                        </v-btn>
+                    <v-btn
+                      icon
+                      variant="text"
+                      v-bind="props"
+                      @click="editReservationsDetail(item)"
+                    >
+                      <v-icon color="blue">mdi-pencil-outline</v-icon>
+                    </v-btn>
                   </div>
                 </template>
               </v-data-table>
@@ -554,7 +554,7 @@ import {
   gTransactionPricePreview,
   gPriceReviewDetail,
   pPriceReviewDetail,
-  pDeletedPriceReview
+  pDeletedPriceReview,
 } from "@/services/apiISM";
 import Swal from "sweetalert2";
 
@@ -875,7 +875,7 @@ const showSnackbars = (message, color = "yellow") => {
 
 const createPriceReviewHead = async () => {
   if (!mBranch.value) {
-    showSnackbars("กรุณาเลือกสาขา");
+    return showSnackbars("กรุณาเลือกสาขา");
   }
   isLoading.value = true;
   try {
@@ -1173,7 +1173,6 @@ const deleteItem = (item) => {
     }
   });
 };
-
 
 onMounted(async () => {
   const dataForCustomers = determineFetchData(userGroups.value, userStore);

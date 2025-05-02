@@ -158,3 +158,34 @@ export const pDeletedPriceReview = async (item) => {
     throw error;
   }
 };
+
+
+export const gWorkSessionsBy = async (item) => {
+  try {
+    const response = await api.get(`gWorkSessionsBy?userID=${item}`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error gWorkSessionsBy:', error);
+    throw error;
+  }
+};
+
+export const pInsertWorkSessions = async (item) => {
+  try {
+    const response = await api.post('pInsertWorkSessions', item);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error pInsertWorkSessions:', error);
+    throw error;
+  }
+};
+
+export const gMHolidayTypes = async () => {
+  try {
+    const response = await api.get(`gMHolidayTypes`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error gMHolidayTypes:', error);
+    throw error;
+  }
+};
