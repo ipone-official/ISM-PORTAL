@@ -8,10 +8,10 @@
             variant="tonal"
             border="start"
             density="compact"
-            class="pa-3 text-md-start text-start custom-yellow-alert"
+            class="pa-3 text-md-start text-start custom-pink-alert"
           >
-            <v-icon start class="mr-2">mdi-map-marker</v-icon>
-            <strong>พิกัดปัจจุบัน:</strong>
+            <v-icon start class="mr-2">mdi-map-marker-outline</v-icon>
+            พิกัดปัจจุบัน :
             {{ currentLat }}, {{ currentLon }}
           </v-alert>
         </v-col>
@@ -21,10 +21,10 @@
             variant="tonal"
             border="start"
             density="compact"
-            class="pa-3 text-md-start text-start custom-yellow-alert"
+            class="pa-3 text-md-start text-start custom-pink-alert"
           >
-            <v-icon start class="mr-2">mdi-clock-time-four</v-icon>
-            <strong>เวลา:</strong>
+            <v-icon start class="mr-2">mdi-clock-time-four-outline</v-icon>
+            เวลา :
             {{ currentTime }}
           </v-alert>
         </v-col>
@@ -72,11 +72,9 @@
       <v-row v-if="mBranch">
         <v-col cols="12" md="6">
           <v-alert
-            type="primary"
             variant="tonal"
             border="start"
-            density="compact"
-            class="pa-3 text-md-start text-start"
+            class="pa-3 text-md-start text-start custom-pink-alert"
           >
             📌 {{ mBranch.display }}: {{ latitudeFormatted }},
             {{ longitudeFormatted }}
@@ -85,11 +83,11 @@
         <v-col cols="12" md="6">
           <v-alert
             v-if="routeSummary"
-            type="primary"
-            class="pa-3 text-md-start text-start"
+            class="pa-3 text-md-start text-start custom-pink-alert"
             border="start"
             variant="tonal"
           >
+            <v-icon start class="mr-2">mdi-clock-time-four-outline</v-icon>
             {{ routeSummary }}
           </v-alert>
         </v-col>
@@ -100,7 +98,7 @@
             color="green"
             prepend-icon="mdi-directions"
             :disabled="!mBranch"
-            @click="openGoogleNavigation(mBranch.lat, mBranch.lon)"
+            @click="openGoogleNavigation(mBranch.latitude, mBranch.longitude)"
           >
             เปิดนำทาง Google Maps
           </v-btn>
@@ -109,7 +107,7 @@
       <!-- 🗺️ แผนที่ Leaflet -->
       <v-row>
         <v-col cols="12">
-          <div id="map" style="height: 400px; width: 100%; border-radius: 12px"></div>
+          <div ref="mapContainer" style="height: 400px; width: 100%" />
         </v-col>
       </v-row>
 
@@ -124,6 +122,7 @@
             size="large"
             prepend-icon="mdi-login"
             v-if="!hasCheckedIn"
+            :disabled="!mBranch || !isWithinRadius"
           >
             เช็คอิน
           </v-btn>
@@ -176,7 +175,7 @@
                 color="error"
                 variant="elevated"
                 size="small"
-                @click="removeLastCheckIn"
+                @click="removeLastCheckIn(item)"
                 icon
               >
                 <v-icon size="20">mdi-delete</v-icon>
@@ -211,11 +210,13 @@ import {
   gMHolidayTypes,
   pInsertWorkSessions,
   gWorkSessionsBy,
+  pDeletedWorkSessions,
 } from "@/services/apiISM";
 import { useUserStore } from "@/stores/userStore";
 
 dayjs.extend(duration);
 
+const mapContainer = ref(null);
 const mBranch = ref(null);
 const iBranch = ref([]);
 const currentLat = ref(null);
@@ -224,7 +225,6 @@ const currentTime = ref("");
 const hasCheckedIn = ref(false);
 const checkedInItems = ref([]);
 const notCheckedOutItems = ref([]);
-const userPositionReady = ref(false);
 let interval = null;
 const routeSummary = ref("");
 const hasAlertedLocationError = ref(false);
@@ -293,9 +293,7 @@ const determineFetchData = (userGroups, userStore) => {
 };
 
 const isLoading = ref(false);
-const orsApiKey = "5b3ce3597851110001cf624825291faac30d48ce9c22d595f3c69981";
 
-let startMarker = null;
 let endMarker = null;
 // let routeTimeout = null;
 // let radiusCircle = null;
@@ -311,7 +309,6 @@ const createCustomIcon = (mdiIcon, color) => {
 
 const markAndCalculateOnly = (lat, lon) => {
   if (!map.value || currentLat.value == null || currentLon.value == null) return;
-
   // 🔴 ลบ marker จุดเลือกเดิม
   if (endMarker) endMarker.remove();
 
@@ -362,15 +359,23 @@ watch(mBranch, () => {
   const lat = parseFloat(mBranch.value?.latitude);
   const lon = parseFloat(mBranch.value?.longitude);
 
-  if (
-    mBranch.value &&
-    userPositionReady.value &&
-    !isNaN(lat) &&
-    !isNaN(lon) &&
-    lat !== 0 &&
-    lon !== 0
-  ) {
+  if (mBranch.value && !isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
     markAndCalculateOnly(lat, lon);
+  } else {
+    // 🔴 ลบรัศมีออกจากแผนที่
+    if (map.value) {
+      if (map.value.getLayer("radius")) map.value.removeLayer("radius");
+      if (map.value.getSource("radius")) map.value.removeSource("radius");
+    }
+
+    // 🔄 ลบ marker ปลายทางถ้ามี
+    if (endMarker) {
+      endMarker.remove();
+      endMarker = null;
+    }
+
+    // 🔄 ล้างข้อความระยะทางด้วย
+    routeSummary.value = "";
   }
 });
 
@@ -382,125 +387,10 @@ const longitudeFormatted = computed(() => {
   const lat = parseFloat(mBranch.value.longitude);
   return isNaN(lat) ? 0.0 : lat.toFixed(6);
 });
-// watch(mBranch, () => {
-//   if (userPositionReady.value) {
-//     updateMapView();
-//   }
-// });
-// watch(mBranch, () => {
-//   if (routeTimeout) clearTimeout(routeTimeout);
-
-//   routeTimeout = setTimeout(() => {
-//     if (mBranch.value && currentLat.value != null && currentLon.value != null) {
-//       getRouteAndDraw(
-//         currentLat.value,
-//         currentLon.value,
-//         mBranch.value.lat,
-//         mBranch.value.lon
-//       );
-//     }
-//   }, 500);
-// });
 
 const openGoogleNavigation = (lat, lon) => {
   const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=car`;
   window.open(url, "_blank");
-};
-
-const getRouteAndDraw = async (fromLat, fromLon, toLat, toLon) => {
-  try {
-    // ลบ Layer/Source เดิมทั้งหมดถ้ามี
-    if (map.value.getLayer("route-line")) map.value.removeLayer("route-line");
-    if (map.value.getSource("route")) map.value.removeSource("route");
-
-    if (map.value.getLayer("radius")) map.value.removeLayer("radius");
-    if (map.value.getSource("radius")) map.value.removeSource("radius");
-
-    if (startMarker) startMarker.remove();
-    if (endMarker) endMarker.remove();
-
-    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${orsApiKey}&start=${fromLon},${fromLat}&end=${toLon},${toLat}`;
-    const res = await fetch(url);
-
-    if (!res.ok) throw new Error(`OpenRouteService error: ${res.status}`);
-
-    const data = await res.json();
-    const geometry = data.features[0].geometry;
-    const distance = data.features[0].properties.segments[0].distance;
-    const duration = data.features[0].properties.segments[0].duration;
-
-    routeSummary.value = `ระยะทางจริง: ${(distance / 1000).toFixed(
-      2
-    )} กม. | เวลาโดยประมาณ: ${Math.round(duration / 60)} นาที`;
-
-    // ➕ วาดเส้นทาง
-    map.value.addSource("route", {
-      type: "geojson",
-      data: geometry,
-    });
-
-    map.value.addLayer({
-      id: "route-line",
-      type: "line",
-      source: "route",
-      paint: {
-        "line-color": "#FF5252",
-        "line-width": 4,
-      },
-    });
-
-    // ➕ Marker
-    startMarker = new maplibregl.Marker({ color: "green" })
-      .setLngLat([fromLon, fromLat])
-      .addTo(map.value);
-
-    endMarker = new maplibregl.Marker({ color: "red" })
-      .setLngLat([toLon, toLat])
-      .addTo(map.value);
-
-    // ➕ วงรัศมี 500 เมตร
-    const circleGeo = turf.circle([toLon, toLat], 0.5, {
-      steps: 64,
-      units: "kilometers",
-    });
-
-    map.value.addSource("radius", {
-      type: "geojson",
-      data: circleGeo,
-    });
-
-    map.value.addLayer({
-      id: "radius",
-      type: "fill",
-      source: "radius",
-      layout: {},
-      paint: {
-        "fill-color": "#3f51b5",
-        "fill-opacity": 0.2,
-      },
-    });
-
-    // ➕ Fit view
-    const bounds = turf.bbox(geometry);
-    map.value.fitBounds(bounds, { padding: 50 });
-  } catch (err) {
-    console.error("เกิดข้อผิดพลาดในการโหลดเส้นทาง:", err);
-    routeSummary.value = "ไม่สามารถโหลดเส้นทางได้";
-  }
-};
-
-const updateMapView = () => {
-  if (
-    !map.value ||
-    !mBranch.value ||
-    currentLat.value == null ||
-    currentLon.value == null
-  )
-    return;
-
-  const { latitude, longitude } = mBranch.value;
-
-  getRouteAndDraw(currentLat.value, currentLon.value, latitude, longitude);
 };
 
 const formatTime = (date) => {
@@ -539,14 +429,26 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
 const isWithinRadius = computed(() => {
   if (!mBranch.value || currentLat.value == null || currentLon.value == null)
     return false;
+
+  const branchLat = mBranch.value.latitude;
+  const branchLon = mBranch.value.longitude;
+
+  // ✅ ถ้า latitude หรือ longitude เป็น 0, null, undefined, "" → ให้ผ่านได้เลย
+  const isLatLonMissing =
+    !branchLat || !branchLon || isNaN(branchLat) || isNaN(branchLon);
+
+  if (isLatLonMissing) return true;
+
   const d = getDistance(
     currentLat.value,
     currentLon.value,
-    mBranch.value.latitude,
-    mBranch.value.longitude
+    Number(branchLat),
+    Number(branchLon)
   );
+
   return d <= 1000;
 });
+
 const getLocation = async () => {
   try {
     const permission = await navigator.permissions.query({ name: "geolocation" });
@@ -595,7 +497,6 @@ const getLocation = async () => {
   function successCallback(pos) {
     const lat = pos.coords.latitude;
     const lon = pos.coords.longitude;
-    userPositionReady.value = true;
     currentLat.value = lat;
     currentLon.value = lon;
     hasAlertedLocationError.value = false;
@@ -680,26 +581,6 @@ const checkInOut = async () => {
       if (result.isConfirmed) {
         resetForm();
         fetchWorkSessionsList(userStore.empId);
-        await nextTick();
-
-        map.value = new maplibregl.Map({
-          container: "map",
-          style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
-          center: [100.669607, 13.7765941],
-          zoom: 13,
-        });
-
-        // ✅ รอ style โหลดก่อนค่อยเริ่มทำงานอื่น ๆ
-        map.value.on("load", () => {
-          const waitForStyle = () => {
-            if (!map.value.isStyleLoaded()) {
-              requestAnimationFrame(waitForStyle);
-            } else {
-              getLocation(); // ✨ เรียกหลัง style พร้อม
-            }
-          };
-          waitForStyle();
-        });
       }
     });
   } catch (error) {
@@ -709,14 +590,47 @@ const checkInOut = async () => {
   }
 };
 
-const removeLastCheckIn = () => {
-  if (
-    checkedInItems.value.length &&
-    !checkedInItems.value[checkedInItems.value.length - 1].checkedOutTime
-  ) {
-    checkedInItems.value.pop();
-    hasCheckedIn.value = false;
-  }
+const removeLastCheckIn = (item) => {
+  Swal.fire({
+    html: `คุณแน่ใจหรือไม่ว่าต้องการลบรายการเช็คอิน <br/> ร้าน : <strong>${
+      item.branchName
+    }</strong> <br/> วันที่เวลา : ${formatDateTime(item.checkedIn)} ?`,
+    icon: "warning",
+    showCancelButton: true,
+    allowOutsideClick: false,
+    confirmButtonText: "OK",
+    didOpen: () => {
+      document.querySelector(".swal2-confirm").style.color = "white";
+      document.querySelector(".swal2-cancel").style.color = "white";
+    },
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      isLoading.value = true;
+      try {
+        const init = {
+          wsID: item.wsID,
+        };
+        await pDeletedWorkSessions(init);
+        Swal.fire({
+          html: `ลบรายการเช็คอินร้าน ${item.branchName} สำเร็จ 🎉`,
+          icon: "success",
+          confirmButtonText: "OK",
+          didOpen: () => {
+            document.querySelector(".swal2-confirm").style.color = "white";
+          },
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            resetForm();
+            fetchWorkSessionsList(userStore.empId);
+          }
+        });
+      } catch (e) {
+        console.log(e);
+      } finally {
+        isLoading.value = false;
+      }
+    }
+  });
 };
 
 const updateTime = () => {
@@ -810,47 +724,51 @@ const fetchWorkSessionsList = async (item) => {
 };
 
 onMounted(async () => {
-  await nextTick();
+  nextTick(() => {
+    map.value = new maplibregl.Map({
+      container: mapContainer.value, // ✅ ใช้ ref ปลอดภัยกว่า id
+      style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+      center: [100.5018, 13.7563],
+      zoom: 14,
+    });
 
-  // ✅ สร้างแผนที่
-  map.value = new maplibregl.Map({
-    container: "map",
-    style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
-    center: [100.669607, 13.7765941],
-    zoom: 13,
-  });
-
-  // ✅ รอให้ map โหลด style เสร็จก่อน
-  map.value.on("load", () => {
-    // ✅ เช็คซ้ำด้วย isStyleLoaded() เพื่อความชัวร์
-    const waitForStyle = () => {
-      if (!map.value.isStyleLoaded()) {
-        requestAnimationFrame(waitForStyle);
-      } else {
-        getLocation();
-        updateTime();
-        interval = setInterval(() => {
-          updateTime();
-          getLocation();
-        }, 1000);
-      }
-    };
-    waitForStyle();
+    // ✅ รอให้ map โหลด style เสร็จก่อน
+    map.value.on("load", () => {
+      // ✅ เช็คซ้ำด้วย isStyleLoaded() เพื่อความชัวร์
+      const waitForStyle = () => {
+        if (!map.value.isStyleLoaded()) {
+          requestAnimationFrame(waitForStyle);
+        } else {
+          getLocation(); // 👉 ปักหมุด / แสดงตำแหน่งผู้ใช้
+          updateTime(); // 👉 อัปเดตเวลาแสดงผล
+          interval = setInterval(() => {
+            updateTime();
+            getLocation();
+          }, 1000); // ✅ อัปเดตทุก 1 วิ
+        }
+      };
+      waitForStyle();
+    });
   });
 
   // ✅ คำสั่งอื่นๆ ที่ไม่เกี่ยวกับ map สามารถเรียกได้ทันที
   const dataForCustomers = determineFetchData(userGroups.value, userStore);
   fetchMasterCustomers(dataForCustomers);
   fetchMasterHolidayType();
-  fetchWorkSessionsList(userStore.empId);
   mHolidayType.value = {
     holidayTypeID: "H01",
     holidayDesc: "วันทำงานปกติ",
   };
 });
 
+watch(currentLat, (val) => {
+  if (val !== null) {
+    fetchWorkSessionsList(userStore.empId);
+  }
+});
 onBeforeUnmount(() => {
-  clearInterval(interval);
+  if (interval) clearInterval(interval);
+  if (map.value) map.value.remove();
 });
 </script>
 <style scoped>
@@ -879,8 +797,10 @@ onBeforeUnmount(() => {
   }
 }
 
-.custom-yellow-alert {
-  background-color: #ffca28 !important;
-  color: black !important;
+.custom-pink-alert {
+  background-color: #ffd6dd !important;
+  color: #4a1c2b !important;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(255, 192, 203, 0.2);
 }
 </style>

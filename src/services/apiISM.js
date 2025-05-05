@@ -189,3 +189,19 @@ export const gMHolidayTypes = async () => {
     throw error;
   }
 };
+
+export const pDeletedWorkSessions = async (item) => {
+  try {
+    const response = await api.delete(`pDeletedWorkSessions`, {
+      data: item, // ส่งข้อมูลใน Body
+      headers: {
+        "Content-Type": "application/json", // กำหนด Content-Type
+      },
+    });
+
+    return response.data; // ส่งคืนข้อมูลเมื่อสำเร็จ
+  } catch (error) {
+    console.error('❌ Error pDeletedWorkSessions:', error);
+    throw error;
+  }
+};
