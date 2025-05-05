@@ -470,6 +470,8 @@
                 :search="mSearchDetail"
                 dense
                 rounded
+                fixed-header
+                height="580px"
               >
                 <template v-slot:item.sequenceID="{ item }">
                   <div class="flex items-center gap-2">
@@ -1333,5 +1335,10 @@ onMounted(async () => {
 }
 .v-radio {
   margin-right: 4px !important; /* ลดระยะห่างให้ชิด */
+}
+
+.data-table-wrapper {
+  max-height: 400px; /* หรือขนาดที่คุณต้องการให้ table มีความสูงจำกัด */
+  overflow-y: auto;
 }
 </style>
