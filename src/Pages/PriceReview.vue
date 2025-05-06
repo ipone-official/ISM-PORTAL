@@ -471,10 +471,12 @@
                 dense
                 rounded
               >
+                <!-- fixed-header
+                height="580px" -->
                 <template v-slot:item.sequenceID="{ item }">
                   <div class="flex items-center gap-2">
                     {{ item.sequenceID }}
-                    <v-icon v-if="item.flagEdit" color="success" size="18"
+                    <v-icon v-if="item.flagEdit == 'Y'" color="success" size="18"
                       >mdi-check</v-icon
                     >
                   </div>
@@ -951,7 +953,6 @@ const fetchTransactionPricePreviewDetail = async (data) => {
     const response = await gPriceReviewDetail(data);
     rawReservationsDetail.value = response.results.map((item) => ({
       ...item,
-      flagEdit: false,
     }));
   } catch (error) {
     console.error("เกิดข้อผิดพลาดในการโหลดข้อมูล:", error);
@@ -1036,7 +1037,7 @@ const saveEditDetail = () => {
   if (index !== -1) {
     rawReservationsDetail.value[index].reviewPrice = mReviewPrice.value;
     rawReservationsDetail.value[index].remark = mRemark.value;
-    rawReservationsDetail.value[index].flagEdit = true;
+    rawReservationsDetail.value[index].flagEdit = 'Y';
 
     // เคลียร์สถานะหลังบันทึก
     clearDataEdit();
@@ -1071,6 +1072,7 @@ const submitFormDetail = async () => {
         reviewPrice: item.reviewPrice,
         promoLabel: item.promoLabel,
         remark: item.remark,
+        flagEdit: item.flagEdit
       })),
     };
 
@@ -1334,4 +1336,5 @@ onMounted(async () => {
 .v-radio {
   margin-right: 4px !important; /* ลดระยะห่างให้ชิด */
 }
+
 </style>
