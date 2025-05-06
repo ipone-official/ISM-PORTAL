@@ -811,10 +811,38 @@ const openImage = (url) => {
   selectedImageUrl.value = url;
   dialogShowImage.value = true;
 };
+const showSnackbars = (message, color = "yellow") => {
+  msgSnackbar.value = message;
+  snackbarColor.value = color;
+  showSnackbar.value = true;
+};
+
 
 const submitForm = async () => {
+ 
+  if (!mBranch.value) {
+    return showSnackbars("กรุณาเลือกห้าง / สาขา");
+  }
+  if (!mMaterial.value) {
+    return showSnackbars("กรุณาเลือกชื่อผลิตภัณฑ์");
+  }
+  if (!mSpecialArea.value) {
+    return showSnackbars("กรุณาเลือกชื่อพื้นที่พิเศษ");
+  }
+  if (!mQuantity.value) {
+    return showSnackbars("กรุณาระบุจำนวน");
+  }
+  if (!mLocationDesc.value) {
+    return showSnackbars("กรุณาระบุสถานที่จัดงาน");
+  }
+  if (!mLocationDesc.value) {
+    return showSnackbars("กรุณาระบุสถานที่จัดงาน");
+  }
+  const isChangeImage = Boolean(selectSpecialArea.value && selectedFile.value);
+  if (!isChangeImage && flagCreate.value) {
+    return showSnackbars("กรุณาเลือกรูปภาพ");
+  }
   isLoading.value = true;
-
   try {
     const formData = new FormData();
     formData.append("files", selectedFile.value);
@@ -838,8 +866,6 @@ const submitForm = async () => {
       selectSpecialArea.value.length != 0 ? selectSpecialArea.value.imageFileName : ""
     );
     formData.append("empBy", userStore.empId);
-    const isChangeImage = Boolean(selectSpecialArea.value && selectedFile.value);
-
     formData.append("flagChangeImage", isChangeImage ? "true" : "false");
     formData.append("ismArea", mBranch.value.ismArea);
 
@@ -1027,7 +1053,6 @@ const formatDateConvert = (dateStr) => {
 };
 const exportFileExcel = async () => {
   const data = selectedItems();
-
   // ✅ แปลงวันที่
   const formattedData = data.map((item) => [
     item.saID,
@@ -1043,6 +1068,7 @@ const exportFileExcel = async () => {
     item.status,
     item.ismArea,
     item.createdName,
+    item.createdBy
   ]);
 
   const header = [
@@ -1059,6 +1085,7 @@ const exportFileExcel = async () => {
     "status",
     "ismArea",
     "createdName",
+    "employeeId"
   ];
 
   const wb = await XlsxPopulate.fromBlankAsync();
