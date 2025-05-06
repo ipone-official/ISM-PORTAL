@@ -205,3 +205,16 @@ export const pDeletedWorkSessions = async (item) => {
     throw error;
   }
 };
+
+
+
+
+export const gViewPriceCheck = async (item) => {
+  try {
+    const response = await api.post('gViewPriceCheck', item);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error gViewPriceCheck:', error);
+    throw error;
+  }
+};

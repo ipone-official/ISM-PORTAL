@@ -983,7 +983,6 @@ const selectedItems = () => {
 const confirmSpecialAreas = () => {
   const data = selectedItems();
   const confirmedItems = data.filter((item) => item.status === "REGISTER");
-  console.log(confirmedItems);
 
   if (confirmedItems.length === 0) {
     Swal.fire({

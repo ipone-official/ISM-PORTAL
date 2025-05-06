@@ -59,7 +59,7 @@
       </v-tooltip>
     </v-row>
     <v-row dense align="center" class="filter-row" v-if="sDisabledDate">
-      <v-col cols="12" sm="4" md="4" class="filter-col mb-3">
+      <v-col cols="12" sm="3" md="3" class="filter-col mb-3">
         <v-autocomplete
           v-model="mFilterAccount"
           :items="iFilterAccount"
@@ -76,8 +76,24 @@
           clearable
         />
       </v-col>
-
-      <v-col cols="12" sm="7" md="7" class="filter-col mb-3">
+      <v-col cols="12" sm="3" md="3" class="filter-col mb-3">
+        <v-autocomplete
+          v-model="mFilterBranch"
+          :items="iFilterBranch"
+          label="ชื่อสาขา/ห้าง"
+          item-title="display"
+          item-value="key"
+          outlined
+          dense
+          class="filter-select input-field custom-autocomplete"
+          return-object
+          multiple
+          :color="'primary'"
+          active-class="custom-active-class"
+          clearable
+        />
+      </v-col>
+      <v-col cols="12" sm="5" md="5" class="filter-col mb-3">
         <v-text-field
           v-model="mSearch"
           label="Search"
@@ -88,6 +104,22 @@
         />
       </v-col>
     </v-row>
+    <v-row dense align="center" justify="end" class="filter-row" v-if="sDisabledDate">
+      <v-col cols="auto" class="filter-col" v-if="selected.length != 0">
+        <v-btn
+          fab
+          small
+          color="green"
+          dark
+          class="ma-1 small-export-button"
+          v-bind="attrs"
+          v-on="on"
+          @click="exportFileExcel"
+        >
+          <v-icon size="25">mdi-microsoft-excel</v-icon>
+        </v-btn>
+      </v-col>
+    </v-row>
     <!-- ตารางข้อมูล -->
     <v-data-table
       :headers="headers"
@@ -95,8 +127,10 @@
       :search="mSearch"
       class="data-table mt-5"
       dense
+      v-model="selected"
+      show-select
       rounded
-      item-value="saID"
+      item-value="reviewID"
     >
       <template v-slot:top>
         <v-toolbar flat class="custom-toolbar">
@@ -473,12 +507,18 @@
               >
                 <!-- fixed-header
                 height="580px" -->
-                <template v-slot:item.sequenceID="{ item }">
+
+                <!-- <template v-slot:item.sequenceID="{ item }">
                   <div class="flex items-center gap-2">
                     {{ item.sequenceID }}
                     <v-icon v-if="item.flagEdit == 'Y'" color="success" size="18"
                       >mdi-check</v-icon
                     >
+                  </div>
+                </template> -->
+                <template v-slot:item.size="{ item }">
+                  <div class="flex items-center gap-2 justify-end text-right">
+                    {{ item.size }}
                   </div>
                 </template>
                 <template v-slot:item.normalPrice="{ item }">
@@ -494,14 +534,23 @@
                 <template v-slot:item.actions="{ item }">
                   <div class="action-buttons">
                     <!-- Edit Tooltip -->
-                    <v-btn
-                      icon
-                      variant="text"
-                      v-bind="props"
-                      @click="editReservationsDetail(item)"
-                    >
-                      <v-icon color="blue">mdi-pencil-outline</v-icon>
-                    </v-btn>
+                    <v-row>
+                      <v-btn
+                        icon
+                        variant="text"
+                        v-bind="props"
+                        @click="editReservationsDetail(item)"
+                      >
+                        <v-icon color="blue">mdi-pencil-outline</v-icon>
+                      </v-btn>
+                      <v-icon
+                        v-if="item.flagEdit == 'Y'"
+                        color="success"
+                        size="18"
+                        class="mt-1"
+                        >mdi-check</v-icon
+                      >
+                    </v-row>
                   </div>
                 </template>
               </v-data-table>
@@ -557,8 +606,10 @@ import {
   gPriceReviewDetail,
   pPriceReviewDetail,
   pDeletedPriceReview,
+  gViewPriceCheck,
 } from "@/services/apiISM";
 import Swal from "sweetalert2";
+import XlsxPopulate from "xlsx-populate";
 
 const userStore = useUserStore();
 // ดึง groups จาก userStore
@@ -612,6 +663,7 @@ const determineFetchData = (userGroups, userStore) => {
   }
   return data;
 };
+const selected = ref([]);
 const isLoading = ref(false);
 const showSnackbar = ref(false);
 const msgSnackbar = ref("");
@@ -633,6 +685,7 @@ const mNormalPrice = ref(null);
 const mReviewPrice = ref(null);
 const mRemark = ref(null);
 const editId = ref(null);
+const mFilterBranch = ref([]);
 const headers = [
   { title: "เลขที่", align: "left", key: "reviewID" },
   { title: "วันที่ตรวจสอบ", align: "left", key: "formattedDate" },
@@ -641,15 +694,15 @@ const headers = [
   { title: "ดำเนินการ", align: "left", key: "actions" },
 ];
 const dialogHeader = [
-  { title: "ลำดับ", align: "start", key: "sequenceID" },
+  { title: "ดำเนินการ", align: "center", key: "actions" },
+  // { title: "ลำดับ", align: "start", key: "sequenceID" },
   { title: "ยี่ห้อ", align: "start", key: "productName" },
   { title: "กลุ่มสินค้า", align: "start", key: "productGroup" },
+  { title: "ขนาด", align: "end", key: "size" },
   { title: "สี", align: "start", key: "color" },
-  { title: "ขนาด", align: "start", key: "size" },
   { title: "ราคาสินค้า", align: "end", key: "normalPrice" },
   { title: "ราคาตรวจสอบ", align: "end", key: "reviewPrice" },
   { title: "หมายเหตุ", align: "start", key: "remark" },
-  { title: "ดำเนินการ", align: "center", key: "actions" },
 ];
 
 // ฟังก์ชันแปลงวันที่เป็น yyyyMMdd
@@ -699,6 +752,7 @@ const resetForm = () => {
   mSearchDetail.value = null;
   mBranch.value = null;
   dateReview.value = getTodayYYYYMMDD();
+  selected.value = [];
   clearDataEdit();
 };
 const updatedmNormalPrice = (event) => {
@@ -832,6 +886,23 @@ const fetchTransactionPricePreview = async () => {
     isLoading.value = false;
   }
 };
+const iFilterBranch = computed(() => {
+  const branchMap = new Map();
+
+  rawReservations.value.forEach((item) => {
+    if (item.branchCode && item.branchName) {
+      branchMap.set(item.branchCode, item.branchName);
+    }
+  });
+
+  return Array.from(branchMap, ([key, name]) => ({
+    key,
+    display: `${name} (${key})`,
+  }));
+});
+const selectedBranchKeys = computed(() =>
+  Array.isArray(mFilterBranch.value) ? mFilterBranch.value.map((i) => i.key) : []
+);
 
 const iFilterAccount = computed(() => {
   const accountMap = new Map();
@@ -856,8 +927,10 @@ const filteredReservations = computed(() => {
     const matchAccount =
       selectedAccountKeys.value.length === 0 ||
       selectedAccountKeys.value.includes(item.createdBy);
-
-    return matchAccount;
+    const matchBranch =
+      selectedBranchKeys.value.length === 0 ||
+      selectedBranchKeys.value.includes(item.branchCode);
+    return matchAccount && matchBranch;
   });
 });
 
@@ -1037,7 +1110,7 @@ const saveEditDetail = () => {
   if (index !== -1) {
     rawReservationsDetail.value[index].reviewPrice = mReviewPrice.value;
     rawReservationsDetail.value[index].remark = mRemark.value;
-    rawReservationsDetail.value[index].flagEdit = 'Y';
+    rawReservationsDetail.value[index].flagEdit = "Y";
 
     // เคลียร์สถานะหลังบันทึก
     clearDataEdit();
@@ -1072,7 +1145,7 @@ const submitFormDetail = async () => {
         reviewPrice: item.reviewPrice,
         promoLabel: item.promoLabel,
         remark: item.remark,
-        flagEdit: item.flagEdit
+        flagEdit: item.flagEdit,
       })),
     };
 
@@ -1128,6 +1201,7 @@ const searchPriceReview = () => {
 const closePriceReview = () => {
   sDisabledDate.value = false;
   mFilterAccount.value = null;
+  mFilterBranch.value = null;
   mSearch.value = null;
   rawReservations.value = [];
   rawReservationsDetail.value = [];
@@ -1174,6 +1248,115 @@ const deleteItem = (item) => {
       }
     }
   });
+};
+
+const exportFileExcel = async () => {
+  if (!selected.value || selected.value.length === 0) {
+    console.warn("No selected reviewIDs to export.");
+    return;
+  }
+  isLoading.value = true;
+  const payload = selected.value.map((id) => ({ reviewID: id }));
+
+  try {
+    const response = await gViewPriceCheck(payload);
+
+    if (!response.results || response.results.length === 0) {
+      showSnackbars("ไม่พบข้อมูลสำหรับ Export");
+      return;
+    }
+
+    const data = response.results.map((item) => ({
+      ...item,
+      formattedDate: item.createdDate ? formatDate(item.createdDate) : "-",
+    }));
+    const formattedData = data.map((item) => [
+      item.reviewID,
+      item.formattedDate,
+      item.branchCode,
+      item.branchName,
+      item.productName,
+      item.productGroup,
+      item.color,
+      item.size,
+      item.normalPrice,
+      item.reviewPrice,
+      item.remark,
+      item.createdName,
+      item.createdBy,
+    ]);
+
+    const header = [
+      "reviewID",
+      "reviewDate",
+      "branchCode",
+      "branchName",
+      "productName",
+      "productGroup",
+      "color",
+      "size",
+      "normalPrice",
+      "reviewPrice",
+      "remark",
+      "createdName",
+      "employeeId",
+    ];
+
+    const wb = await XlsxPopulate.fromBlankAsync();
+    const sheet = wb.sheet(0);
+    sheet.name("Exported");
+
+    // ✅ เขียนหัวตาราง
+    header.forEach((title, i) => {
+      const cell = sheet.cell(1, i + 1);
+      cell.value(title).style({
+        fill: "007fc4",
+        bold: true,
+        fontColor: "ffffff",
+        horizontalAlignment: "center",
+        border: true,
+      });
+    });
+
+    // ✅ เขียนข้อมูล
+    formattedData.forEach((row, rowIndex) => {
+      row.forEach((value, colIndex) => {
+        const cell = sheet.cell(rowIndex + 2, colIndex + 1);
+        cell.value(value).style({
+          border: true,
+          horizontalAlignment: "left",
+        });
+      });
+    });
+
+    // ✅ ปรับความกว้างคอลัมน์อัตโนมัติ
+    sheet.usedRange().autoFilter();
+    header.forEach((_, colIndex) => {
+      let maxLength = header[colIndex].length;
+      formattedData.forEach((row) => {
+        const cellValue = row[colIndex];
+        if (cellValue) {
+          maxLength = Math.max(maxLength, cellValue.toString().length);
+        }
+      });
+      sheet.column(colIndex + 1).width(Math.min(maxLength * 1.2, 50));
+    });
+
+    // ✅ Export
+    const blob = await wb.outputAsync();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "Exported_PriceReview.xlsx";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    showSnackbars("ไม่สามารถดึงข้อมูลรายการตรวจสอบราคาได้ กรุณาลองใหม่อีกครั้ง!");
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 onMounted(async () => {
@@ -1336,5 +1519,4 @@ onMounted(async () => {
 .v-radio {
   margin-right: 4px !important; /* ลดระยะห่างให้ชิด */
 }
-
 </style>
