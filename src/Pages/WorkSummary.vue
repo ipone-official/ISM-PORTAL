@@ -653,7 +653,6 @@ const formatDate = (yyyymmdd) => {
 
 const searchSummaryByUser = async () => {
   isLoading.value = true;
-  sDisabledDate.value = true;
   try {
     const dataForArea = determineFetchData(userGroups.value, userStore);
     const response = await pWorkDaySummaryByUser({
