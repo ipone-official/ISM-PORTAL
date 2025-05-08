@@ -30,11 +30,24 @@
         value="CheckIn"
       >
         <v-list-item-title class="menu-title">
-          <v-icon>mdi-account-check-outline</v-icon>
+          <v-icon>mdi-calendar-clock-outline</v-icon>
           บันทึกเวลาทำงาน
         </v-list-item-title>
       </v-list-item>
-      
+       <!-- WorkSummary -->
+      <v-list-item
+        v-if="!isHidden('WorkSummary')"
+        class="menu-item"
+        @click="navigateTo('/WorkSummary')"
+        dense
+        rounded="shaped"
+        value="WorkSummary"
+      >
+        <v-list-item-title class="menu-title">
+          <v-icon>mdi-calendar-check-outline</v-icon>
+          สรุปวันทำงาน
+        </v-list-item-title>
+      </v-list-item>
       <!-- SpecialAreas -->
       <v-list-item
         v-if="!isHidden('SpecialAreas')"

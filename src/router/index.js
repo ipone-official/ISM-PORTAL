@@ -5,6 +5,7 @@ import { isTokenNearExpiration, RenewToken } from "@/services/apiService.js";
 import CheckIn from '@/Pages/CheckIn.vue'
 import SpecialAreas from '@/Pages/SpecialAreas.vue';
 import PriceReview from '@/Pages/PriceReview.vue'
+import WorkSummary from '@/Pages/WorkSummary.vue'
 
 const routes = [
   {
@@ -13,6 +14,15 @@ const routes = [
     component: CheckIn,
     meta: {
       breadcrumb: [{ name: 'บันทึกเวลาทำงาน', link: '/CheckIn' },
+      ],
+    },
+  },
+  {
+    path: '/WorkSummary',
+    name: 'WorkSummary',
+    component: WorkSummary,
+    meta: {
+      breadcrumb: [{ name: 'สรุปวันทำงาน', link: '/WorkSummary' },
       ],
     },
   },

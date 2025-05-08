@@ -206,9 +206,6 @@ export const pDeletedWorkSessions = async (item) => {
   }
 };
 
-
-
-
 export const gViewPriceCheck = async (item) => {
   try {
     const response = await api.post('gViewPriceCheck', item);
@@ -218,3 +215,38 @@ export const gViewPriceCheck = async (item) => {
     throw error;
   }
 };
+
+export const pWorkDaySummaryBy = async (item) => {
+  try {
+    const response = await api.post('pWorkDaySummaryBy', item);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error pWorkDaySummaryBy:', error);
+    throw error;
+  }
+};
+export const pWorkDaySummaryByUser = async (item) => {
+  try {
+    const response = await api.post('pWorkDaySummaryByUser', item);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error pWorkDaySummaryByUser:', error);
+    throw error;
+  }
+};
+
+export const pWorkDaySummaryByUserReport = async (item) => {
+  try {
+    const response = await api.post('pWorkDaySummaryByUserReport', item);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error pWorkDaySummaryByUserReport:', error);
+    throw error;
+  }
+};
+
+
+
+
+
+
