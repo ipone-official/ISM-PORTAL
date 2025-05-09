@@ -190,6 +190,11 @@
                 {{ item.summaryOT }}
               </div>
             </template>
+            <template v-slot:item.actions="{ item }">
+              <v-btn icon variant="text" v-bind="props" @click="editItem(item)">
+                <v-icon color="primary">mdi-book-search-outline</v-icon>
+              </v-btn>
+            </template>
           </v-data-table>
         </v-container>
       </v-window-item>
@@ -397,6 +402,69 @@
         </v-container>
       </v-window-item>
     </v-window>
+    <v-dialog v-model="dialog" max-width="900px" scrollable>
+      <v-card class="rounded-xl">
+        <v-card-title class="text-h6">
+          <v-icon class="me-2" color="primary">mdi-calendar-clock</v-icon>
+          รายการเข้างานของพนักงาน
+        </v-card-title>
+
+        <v-divider></v-divider>
+
+        <v-card-text>
+          <v-row>
+            <v-col v-for="item in ReservationsSession" :key="item.wsID" cols="12" sm="6">
+              <v-card class="rounded-lg elevation-3 pa-3" color="grey-lighten-5">
+                <v-card-title class="pb-1">
+                  <v-icon class="me-2" color="blue-darken-2">mdi-map-marker</v-icon>
+                  {{ item.branchName }} ({{ item.branchCode }})
+                </v-card-title>
+
+                <v-card-subtitle class="text-subtitle-2 pb-2">
+                  {{ item.province }} - {{ item.ismArea }}
+                </v-card-subtitle>
+
+                <v-card-text class="text-body-1">
+                  <div>
+                    <strong>📅 วันที่:</strong> {{ formatDate(item.sessionDate) }}
+                  </div>
+                  <div>
+                    <strong>⏰ เวลาเข้า:</strong> {{ extractTime(item.checkedIn) }}
+                  </div>
+                  <div>
+                    <strong>⏰ เวลาออก:</strong> {{ extractTime(item.checkedOut) }}
+                  </div>
+                  <div><strong>📌 ประเภทวัน:</strong> {{ item.holidayDesc }}</div>
+                </v-card-text>
+
+                <v-card-actions v-if="canDeletedWorkSession">
+                  <v-spacer />
+                  <v-btn color="primary" variant="flat" @click="deleteItem(item)">
+                    <v-icon start>mdi-trash-can</v-icon> ลบ
+                  </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-col>
+          </v-row>
+
+          <div v-if="ReservationsSession.length === 0" class="text-center text-grey mt-4">
+            ไม่มีข้อมูลการเข้างาน
+          </div>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            color="red-darken-1"
+            variant="flat"
+            class="rounded-pill"
+            @click="dialog = false"
+          >
+            <v-icon start>mdi-close</v-icon> ปิด
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
   <v-snackbar
     v-model="showSnackbar"
@@ -417,11 +485,14 @@ import {
   pWorkDaySummaryBy,
   pWorkDaySummaryByUser,
   pWorkDaySummaryByUserReport,
+  pWorkSessionByUserDate,
+  pDeletedWorkSessions,
 } from "@/services/apiISM";
 import loading from "@/components/Loading.vue";
 import { useUserStore } from "@/stores/userStore";
 import XlsxPopulate from "xlsx-populate";
 import CustomDatepicker from "@/components/CustomDatepicker.vue";
+import Swal from "sweetalert2";
 
 const userStore = useUserStore();
 // ดึง groups จาก userStore
@@ -495,7 +566,8 @@ const selected = ref([]);
 const showSnackbar = ref(false);
 const msgSnackbar = ref("");
 const snackbarColor = ref("success");
-
+const dialog = ref(false);
+const ReservationsSession = ref([]);
 const getFirstDayOfMonth = () => {
   const today = new Date();
   const yyyy = today.getFullYear();
@@ -521,7 +593,7 @@ const headersSummaryByUser = [
   { title: "เวลาออก", align: "left", key: "checkOut" },
   { title: "เวลาทำงานรวม", align: "end", key: "summaryWork" },
   { title: "โอที", align: "end", key: "summaryOT" },
-  { title: "ดำเนินการ", align: "left", key: "action" },
+  { title: "ดำเนินการ", align: "left", key: "actions" },
 ];
 
 const headersSummary = [
@@ -642,6 +714,8 @@ const closeSummaryByUser = () => {
   rawReservationsByUser.value = [];
   mSearchByUser.value = null;
   selected.value = [];
+  ReservationsSession.value = [];
+  dialog.value = false;
 };
 const formatDate = (yyyymmdd) => {
   if (!yyyymmdd || yyyymmdd.length !== 8) return "Invalid Date";
@@ -774,6 +848,73 @@ const showSnackbars = (message, color = "yellow") => {
   msgSnackbar.value = message;
   snackbarColor.value = color;
   showSnackbar.value = true;
+};
+
+const editItem = async (item) => {
+  const response = await pWorkSessionByUserDate({
+    sessionDate: item.sessionDate,
+    employeeID: item.employeeID,
+  });
+  ReservationsSession.value = response.results;
+  dialog.value = true;
+};
+const deleteItem = async (item) => {
+  dialog.value = false;
+  Swal.fire({
+    html: `คุณแน่ใจหรือไม่ว่าต้องการลบรายการเข้างาน <br/> วันที่ ${formatDate(
+      item.sessionDate
+    )} เวลา ${extractTime(item.checkedIn)} - ${extractTime(item.checkedOut)} น. ?`,
+    icon: "warning",
+    showCancelButton: true,
+    allowOutsideClick: false,
+    confirmButtonText: "OK",
+    didOpen: () => {
+      document.querySelector(".swal2-confirm").style.color = "white";
+      document.querySelector(".swal2-cancel").style.color = "white";
+    },
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      isLoading.value = true;
+      try {
+        await pDeletedWorkSessions({
+          wsID: item.wsID,
+        });
+
+        Swal.fire({
+          html: `ลบรายการสำเร็จ 🎉`,
+          icon: "success",
+          confirmButtonText: "OK",
+          didOpen: () => {
+            document.querySelector(".swal2-confirm").style.color = "white";
+          },
+        }).then((result) => {
+          if (result.isConfirmed) {
+            closeSummaryByUser();
+            searchSummaryByUser();
+          }
+        });
+      } catch (error) {
+        console.error("เกิดข้อผิดพลาดในการโหลดข้อมูล:", error);
+        Swal.fire(
+          "เกิดข้อผิดพลาด",
+          "ไม่สามารถลบข้อมูลได้ กรุณาลองใหม่อีกครั้ง!",
+          "error"
+        );
+      } finally {
+        isLoading.value = false;
+      }
+    } else {
+      dialog.value = true;
+    }
+  });
+};
+const extractTime = (dateTimeStr) => {
+  return dateTimeStr?.split(" ")[1] || "-";
+};
+
+const canDeletedWorkSession = () => {
+  const allowedRoles = ["ISM_ADMIN", "ISM_MANAGER"];
+  return userGroups.value.some((role) => allowedRoles.includes(role));
 };
 
 const exportFileExcelSummaryByUser = async () => {

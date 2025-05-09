@@ -245,6 +245,18 @@ export const pWorkDaySummaryByUserReport = async (item) => {
   }
 };
 
+export const pWorkSessionByUserDate = async (item) => {
+  try {
+    const response = await api.post('pWorkSessionByUserDate', item);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error pWorkSessionByUserDate:', error);
+    throw error;
+  }
+};
+
+
+
 
 
 
