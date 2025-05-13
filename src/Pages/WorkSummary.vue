@@ -594,8 +594,8 @@ const headersSummaryByUser = [
   { title: "ชื่อ", align: "left", key: "fullName" },
   { title: "เวลาบันทึก", align: "left", key: "checkIn" },
   { title: "เวลาออก", align: "left", key: "checkOut" },
-  { title: "เวลาทำงานรวม", align: "end", key: "summaryWork" },
-  { title: "โอที", align: "end", key: "summaryOT" },
+  { title: "เวลาทำงานรวม (ชม.)", align: "end", key: "summaryWork" },
+  { title: "โอที (ชม.)", align: "end", key: "summaryOT" },
   { title: "ดำเนินการ", align: "left", key: "actions" },
 ];
 
@@ -609,7 +609,7 @@ const headersSummary = [
   { title: "พักร้อน", align: "end", key: "vacation" },
   { title: "ลากิจ", align: "end", key: "personalLeave" },
   { title: "วันที่งานทั้งหมด", align: "end", key: "totalworkday" },
-  { title: "โอที", align: "end", key: "summaryOT" },
+  { title: "โอที (ชม.)", align: "end", key: "summaryOT" },
 ];
 function formatMonthYearSlash(value) {
   if (!value) return "";
