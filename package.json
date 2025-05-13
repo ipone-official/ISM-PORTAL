@@ -19,6 +19,7 @@
     "dayjs": "^1.11.13",
     "file-saver": "^2.0.5",
     "flatpickr": "^4.6.13",
+    "heic2any": "^0.0.4",
     "html2canvas": "^1.4.1",
     "install": "^0.13.0",
     "leaflet-routing-machine": "^3.2.12",

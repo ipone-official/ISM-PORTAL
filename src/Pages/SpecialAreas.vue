@@ -532,6 +532,7 @@ import {
 } from "@/services/apiISM";
 import Swal from "sweetalert2";
 import XlsxPopulate from "xlsx-populate";
+import heic2any from 'heic2any'
 
 const userStore = useUserStore();
 // ดึง groups จาก userStore
@@ -627,13 +628,43 @@ const getTodayYYYYMMDD = () => {
 };
 
 // สร้าง preview จากไฟล์ที่เลือก
-watch(selectedFile, (file) => {
-  if (file && file instanceof File) {
-    imagePreview.value = URL.createObjectURL(file);
-  } else {
-    imagePreview.value = null;
+
+watch(selectedFile, async (file) => {
+  if (!file) {
+    imagePreview.value = null
+    return
   }
-});
+
+  const selected = Array.isArray(file) ? file[0] : file
+
+  if (selected instanceof File) {
+    const fileName = selected.name.toLowerCase()
+    const fileType = selected.type.toLowerCase()
+
+    const isHEIF =
+      fileType === 'image/heic' ||
+      fileType === 'image/heif' ||
+      fileName.endsWith('.heic') ||
+      fileName.endsWith('.heif')
+
+    if (isHEIF) {
+      try {
+        const convertedBlob = await heic2any({
+          blob: selected,
+          toType: 'image/jpeg',
+        })
+        imagePreview.value = URL.createObjectURL(convertedBlob)
+      } catch (error) {
+        console.error('HEIC/HEIF แปลงไม่สำเร็จ:', error)
+        imagePreview.value = null
+      }
+    } else {
+      imagePreview.value = URL.createObjectURL(selected)
+    }
+  } else {
+    imagePreview.value = null
+  }
+})
 
 const formatDateTime = (input) => {
   const datePart = input.substring(0, 8);
