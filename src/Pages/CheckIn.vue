@@ -134,7 +134,7 @@
             size="large"
             prepend-icon="mdi-logout"
           >
-            เช็คเอ้าท์
+            เช็คเอาท์
           </v-btn>
         </v-col>
       </v-row>
@@ -161,7 +161,7 @@
 
             <v-col cols="12" md="4" class="text-body-1">
               <span v-if="item.checkedOut">
-                ⏹️ <strong>เช็คเอ้าท์:</strong> {{ formatDateTime(item.checkedOut)
+                ⏹️ <strong>เช็คเอาท์:</strong> {{ formatDateTime(item.checkedOut)
                 }}<br />
                 ⏱️ <strong>อยู่:</strong>
                 {{ calculateDuration(item.checkedIn, item.checkedOut) }}

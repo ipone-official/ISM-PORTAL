@@ -434,6 +434,9 @@
                   <div>
                     <strong>⏰ เวลาออก:</strong> {{ extractTime(item.checkedOut) }}
                   </div>
+                  <div v-if="item.reasonDesc">
+                    <strong>⏰ เหตุผลการลงเวลา:</strong> {{ item.reasonDesc }}
+                  </div>
                   <div><strong>📌 ประเภทวัน:</strong> {{ item.holidayDesc }}</div>
                 </v-card-text>
 
@@ -947,15 +950,19 @@ const exportFileExcelSummaryByUser = async () => {
       item.branch1,
       item.checkIn1,
       item.checkOut1,
+      item.reason1,
       item.branch2,
       item.checkIn2,
       item.checkOut2,
+      item.reason2,
       item.branch3,
       item.checkIn3,
       item.checkOut3,
+      item.reason3,
       item.branch4,
       item.checkIn4,
       item.checkOut4,
+      item.reason4,
       item.summaryOT,
     ]);
     return acc;
@@ -969,15 +976,19 @@ const exportFileExcelSummaryByUser = async () => {
     "สาขาที่ 1",
     "เข้า",
     "ออก",
+    "หมายเหตุ",
     "สาขาที่ 2",
     "เข้า",
     "ออก",
+    "หมายเหตุ",
     "สาขาที่ 3",
     "เข้า",
     "ออก",
+    "หมายเหตุ",
     "สาขาที่ 4",
     "เข้า",
     "ออก",
+    "หมายเหตุ",
     "โอที",
   ];
 
