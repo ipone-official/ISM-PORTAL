@@ -628,40 +628,26 @@ const getTodayYYYYMMDD = () => {
 };
 
 // สร้าง preview จากไฟล์ที่เลือก
-
 watch(selectedFile, async (file) => {
-  if (!file) {
-    imagePreview.value = null
-    return
-  }
-
   const selected = Array.isArray(file) ? file[0] : file
+  if (!selected) return
 
-  if (selected instanceof File) {
-    const fileName = selected.name.toLowerCase()
-    const fileType = selected.type.toLowerCase()
+  const ext = selected.name.toLowerCase()
+  const isHeif = ext.endsWith('.heic') || ext.endsWith('.heif')
 
-    const isHEIF =
-      fileType === 'image/heic' ||
-      fileType === 'image/heif' ||
-      fileName.endsWith('.heic') ||
-      fileName.endsWith('.heif')
-
-    if (isHEIF) {
-      try {
-        const convertedBlob = await heic2any({
-          blob: selected,
-          toType: 'image/jpeg',
-        })
-        imagePreview.value = URL.createObjectURL(convertedBlob)
-      } catch (error) {
-        console.error('HEIC/HEIF แปลงไม่สำเร็จ:', error)
-        imagePreview.value = null
-      }
+  try {
+    if (isHeif) {
+      const convertedBlob = await heic2any({
+        blob: selected,
+        toType: 'image/jpeg',
+        multiple: false
+      })
+      imagePreview.value = URL.createObjectURL(convertedBlob)
     } else {
       imagePreview.value = URL.createObjectURL(selected)
     }
-  } else {
+  } catch (error) {
+    console.error('แปลง HEIC/HEIF ล้มเหลว:', error)
     imagePreview.value = null
   }
 })
