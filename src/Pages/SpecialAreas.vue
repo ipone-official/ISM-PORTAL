@@ -532,7 +532,7 @@ import {
 } from "@/services/apiISM";
 import Swal from "sweetalert2";
 import XlsxPopulate from "xlsx-populate";
-import heic2any from 'heic2any'
+import heic2any from "heic2any";
 
 const userStore = useUserStore();
 // ดึง groups จาก userStore
@@ -629,28 +629,37 @@ const getTodayYYYYMMDD = () => {
 
 // สร้าง preview จากไฟล์ที่เลือก
 watch(selectedFile, async (file) => {
-  const selected = Array.isArray(file) ? file[0] : file
-  if (!selected) return
+  // เคลียร์ preview ถ้าไม่มีไฟล์แล้ว
+  if (!file) {
+    imagePreview.value = null;
+    return;
+  }
 
-  const ext = selected.name.toLowerCase()
-  const isHeif = ext.endsWith('.heic') || ext.endsWith('.heif')
+  const selected = Array.isArray(file) ? file[0] : file;
+  if (!selected) {
+    imagePreview.value = null;
+    return;
+  }
+
+  const ext = selected.name.toLowerCase();
+  const isHeif = ext.endsWith(".heic") || ext.endsWith(".heif");
 
   try {
     if (isHeif) {
       const convertedBlob = await heic2any({
         blob: selected,
-        toType: 'image/jpeg',
-        multiple: false
-      })
-      imagePreview.value = URL.createObjectURL(convertedBlob)
+        toType: "image/jpeg",
+        multiple: false,
+      });
+      imagePreview.value = URL.createObjectURL(convertedBlob);
     } else {
-      imagePreview.value = URL.createObjectURL(selected)
+      imagePreview.value = URL.createObjectURL(selected);
     }
   } catch (error) {
-    console.error('แปลง HEIC/HEIF ล้มเหลว:', error)
-    imagePreview.value = null
+    console.error("แปลง HEIC/HEIF ล้มเหลว:", error);
+    imagePreview.value = null;
   }
-})
+});
 
 const formatDateTime = (input) => {
   const datePart = input.substring(0, 8);
@@ -774,10 +783,10 @@ const searchSpecialAreas = async () => {
       endDate: dateEnd.value,
       empBy: dataForArea,
     });
-   // 🆕 เพิ่มขั้นตอน map และ format date
-   rawReservations.value = response.results.map((item) => ({
+    // 🆕 เพิ่มขั้นตอน map และ format date
+    rawReservations.value = response.results.map((item) => ({
       ...item,
-      formattedDate: item.specialDate ? formatDate(item.specialDate) : "-"
+      formattedDate: item.specialDate ? formatDate(item.specialDate) : "-",
     }));
   } catch (error) {
     console.error("❌ Error loading TSpecialAreas:", error);
@@ -834,9 +843,7 @@ const showSnackbars = (message, color = "yellow") => {
   showSnackbar.value = true;
 };
 
-
 const submitForm = async () => {
- 
   if (!mBranch.value) {
     return showSnackbars("กรุณาเลือกห้าง / สาขา");
   }
@@ -1084,7 +1091,7 @@ const exportFileExcel = async () => {
     item.status,
     item.ismArea,
     item.createdName,
-    item.createdBy
+    item.createdBy,
   ]);
 
   const header = [
@@ -1101,7 +1108,7 @@ const exportFileExcel = async () => {
     "status",
     "ismArea",
     "createdName",
-    "employeeId"
+    "employeeId",
   ];
 
   const wb = await XlsxPopulate.fromBlankAsync();
